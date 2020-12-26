@@ -25,7 +25,7 @@ The following libraries are used
     https://github.com/sigmdel/mdPushButton.git
     https://github.com/sigmdel/mdRotaryEncoder.git  
 
-Of course a different SSD1306 library could be used but ESP8266_SSD1306 by Daniel Eichhorn with contributions by Fabrice Weinberg has very legible for the complete Latin 1 code page which is quite useful for me. I rolled my own button and encoder libraries, but it should be quite easy to replace them if desired.
+Of course a different SSD1306 library could be used but ESP8266_SSD1306 by Daniel Eichhorn with contributions by Fabrice Weinberg has very legible fonts with the complete Latin 1 code page which is quite useful for me. I rolled my own button and encoder libraries, but it should be quite easy to replace them if desired.
 
 # Usage
 
