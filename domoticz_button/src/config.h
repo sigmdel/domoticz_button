@@ -5,6 +5,7 @@
 #include <cstdint>
 
 #define APP_NAME   "Domoticz button"
+#define VERSION    0x000101  // version 0.1.1
 
 // *** Default hostname of device on WiFi network  ***
 // 
@@ -18,30 +19,33 @@
 #define SYSLOG_HOST "192.168.1.11"
 #define SYSLOG_PORT 514
 
+// *** MQTT server ***
+
 #define MQTT_HOST "192.168.1.11"
 #define MQTT_PORT 1883
 #define MQTT_USER ""
 #define MQTT_PSWD ""
 #define MQTT_BUFFER_SIZE 768;
 
-#define DISPLAY_TIMEOUT 15*1000  // ms of inactivity blanks display
-#define ALERT_TIME       3*1000  // alert flash time
+// *** Time delays (in seconds) ***
+
+#define DISPLAY_TIMEOUT    15  // period of inactivity before blanking display
+#define ALERT_TIME          3  // alert on/off time
+#define RESTART_MSG_TIME    2  // minimum time to display Restarting... in doRestart()
+#define MQTT_UPDATE_TIME    5  // initial updating time after MQTT subscribe in mqttReconnect()
+#define STA_IP_TIME         3  // minimum time displaying Wi-Fi IP if connected
 
 // *** Log levels ***
 
 #define LOG_LEVEL_UART    LOG_DEBUG
 #define LOG_LEVEL_SYSLOG  LOG_ERR
 
-
-//==========//==========//==========//==========//==========//==========//==========//
-// Everything above are default values and may be modified with commands in the future.
-// Everything below should be set once for all and cannot be modified at run time.
-//==========//==========//==========//==========//==========//==========//==========//
-
-#define VERSION    0x000100  // version 0.1.0
+// *** Domoticz MQTT topics 
 
 #define DOMO_SUB_TOPIC "domoticz/in"   // case sensitive
 #define DOMO_PUB_TOPIC "domoticz/out"  // case sensitive
+
+// *** String buffer lengths
 
 // Maximum number of characters in string including terminating 0
 //
@@ -60,16 +64,19 @@ struct config_t {
   char hostname[HOST_NAME_SZ];    // used for Wi-Fi connection and MQTT broker connection
   char mqttHost[URL_SZ];          // URL of MQTT server 
   uint16_t mqttPort;              // MQTT port
-  char mqttUser[SSID_SZ];
-  char mqttPswd[PSWD_SZ];
-  uint16_t mqttBufferSize;
+  char mqttUser[SSID_SZ];         // *** NOT YET IMPLEMENTED ***
+  char mqttPswd[PSWD_SZ];         // *** NOT YET IMPLEMENTED ***
+  uint16_t mqttBufferSize;     
   char syslogHost[URL_SZ];        // URL of Syslog server
   uint16_t syslogPort;            // Syslog port
   uint32_t displayTimeout;
   uint32_t alertTime; 
+  uint32_t restartMsgTime;
+  uint32_t mqttUpdateTime;
+  uint32_t staIpTime;
   uint8_t logLevelUart;
   uint8_t logLevelSyslog;  
-  uint32_t checksum;
+  uint32_t checksum;              // Used to validate saved configuration
 };
 
 void useDefaultConfig(void);
@@ -78,6 +85,6 @@ uint32_t loadConfigFromEEPROM(void);
 int loadConfig(void);  // 1 - loaded default config, 2 - loaded EEPROM config (default)
 void clearEEPROM(void);
 
-extern config_t config;
+extern config_t config;  // defined in config.cpp
 
 #endif

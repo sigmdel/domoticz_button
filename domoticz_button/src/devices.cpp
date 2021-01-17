@@ -1,18 +1,34 @@
 #include <Arduino.h>
 #include "devices.h"
 #include "logging.h"
+#include "lang.h"
 
 
-const char * zones[] = {"Top Floor", "Ground Floor", "Basement", "Garage", "House"};
-// French version:
-//const char * zones[] = {"Étage", "Rez-de-chaussée", "Sous-sol", "Garage", "Maison"};
+const char * zones[] = {
+  SC_ZONE0,  // "Upstairs"
+  SC_ZONE1,  // "Ground level"
+  SC_ZONE2,  // "Downstairs"
+  SC_ZONE3,  // "Garage"
+  SC_ZONE4   // "House"
+};
 
-const char * devicestatus[] = {"", "Off", "On", "Mixed", "No", "Yes", "Closed", "Open", "Default", "Weekend", "Holidays"};
-// French version:
-//const char * devicestatus[] = {"", "·", "¤", "·/¤", "Non", "Oui", "Fermée", "Ouverte", "Normal", "Absent", "Vacances"};
+const char * devicestatus[] = {
+  "",                     // "": no status for scenes and push (on/off) buttons
+  SC_STATUS_OFF,          // "Off": buttons, dimmers and groups
+  SC_STATUS_ON,           // "On":  buttons, dimmers and groups
+  SC_STATUS_MIXED,        // "Mixed": groups only
+  SC_STATUS_NO,           // "No": automatic garage door closing (selector switch)
+  SC_STATUS_YES,          // "Yes": automatic garage door closing (selector switch)
+  SC_STATUS_CLOSED,       // "Closed": garage door (contact switch)
+  SC_STATUS_OPEN,         // "Open": garage goor (contact switch)
+  SC_STATUS_TIMER_PLAN0,  // "Default": normal (in house) timer plan (selector switch)
+  SC_STATUS_TIMER_PLAN1,  // "Weekend": weekend (away) timer plan (selector switch)
+  SC_STATUS_TIMER_PLAN2   // "Holidays": holidays (away) timer plan (selector switch)
+};
 
-// only shown in logging messages
-const char * devicetypes[] = {"switch", "dimmer", "contact", "selector", "group", "push off", "scene"};
+
+// only used in logging messages - not translated
+const char * devicetypes[] = {"switch", "dimmer", "push off", "contact", "selector", "group", "scene"};
 
 // Everything in a device_t struct is constant except for on and nvalue which are
 // automatically updated from MQTT messages published by domoticz to the 
@@ -37,7 +53,7 @@ device_t devices[] {
   /* 03 */   {DS_NONE,  0,   7, DT_SCENE,    Z_TOP_FLOOR, "Dodo Alice"},
   /* 04 */   {DS_NONE,  0,   8, DT_SCENE,    Z_TOP_FLOOR, "Dodo Michel"},
   /* 05 */   {DS_OFF,   0,  85, DT_SWITCH,   Z_TOP_FLOOR, "Télé ami"},
-                                                              
+
   /* 06 */   {DS_OFF,   0,   1, DT_SWITCH,   Z_GROUND_FLOOR, "Lampe sur pied"},
   /* 07 */   {DS_OFF,   0,   4, DT_SWITCH,   Z_GROUND_FLOOR, "Lampe sur table"},
   /* 08 */   {DS_OFF,   0,   3, DT_SWITCH,   Z_GROUND_FLOOR, "Bibliothèques"},
@@ -100,7 +116,7 @@ const uint16_t groupCount = sizeof(groups)/sizeof(group_t);
 alert_t alerts[] {
   {16, DS_OPEN},  // garage door : alert when open (DS_OPEN)
   {15, 0}         // automatic garage door closing : alert when turned off (DS_NO)
-                  //   but that corresponds to selector level 0
+                  //   but this is a selector so status will be (DS_NO | DS_YES) - DS_NO
 };
 
 const uint16_t alertCount = sizeof(groups)/sizeof(group_t);

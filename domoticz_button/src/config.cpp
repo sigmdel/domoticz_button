@@ -10,7 +10,6 @@
 config_t config;
 uint32_t eepromConfigHash;
 
-
 uint32_t getConfigHash() {
   uint32_t hash = 0;
   uint8_t *bytes = (uint8_t*)&config;
@@ -53,12 +52,12 @@ void useDefaultConfig(void) {
 
   strlcpy(config.syslogHost, SYSLOG_HOST, URL_SZ);
   config.syslogPort = SYSLOG_PORT;
-
-  strlcpy(config.syslogHost, SYSLOG_HOST, SSID_SZ);
-  config.syslogPort = SYSLOG_PORT;
   
-  config.displayTimeout = DISPLAY_TIMEOUT;
-  config.alertTime = ALERT_TIME;
+  config.displayTimeout = DISPLAY_TIMEOUT*1000;
+  config.alertTime = ALERT_TIME*1000;
+  config.restartMsgTime = RESTART_MSG_TIME*1000;
+  config.mqttUpdateTime = MQTT_UPDATE_TIME*1000;
+  config.staIpTime = STA_IP_TIME*1000;
 
   config.logLevelUart = LOG_LEVEL_UART;
   config.logLevelSyslog = LOG_LEVEL_SYSLOG;
