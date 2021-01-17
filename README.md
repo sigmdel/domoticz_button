@@ -6,8 +6,8 @@ to a home automation system based on [Domoticz](https://domoticz.com).
 
 # Inspiration
 
-This is based on a similar project [Kitchen Button](https://github.com/crankyoldgit/Kitchen-Button) by David Conran 
-(crankyoldgit) that uses the same hardware to control [Tasmota] switches directly. It is a great project and it
+This is based on a similar project, [Kitchen Button](https://github.com/crankyoldgit/Kitchen-Button) by David Conran,
+(crankyoldgit) that uses the same hardware to control [Tasmota](https://github.com/arendst/Tasmota) switches directly. It is a great project and it
 works as is. But my home automation system has some devices that are not based on Tasmota which I also wanted to control.
 Furthermore, there are scenes and groups defined in Domoticz which are quite useful.
 
@@ -25,7 +25,7 @@ The following libraries are used
     https://github.com/sigmdel/mdPushButton.git
     https://github.com/sigmdel/mdRotaryEncoder.git  
 
-Of course a different SSD1306 library could be used but ESP8266_SSD1306 by Daniel Eichhorn with contributions by Fabrice Weinberg has very legible for the complete Latin 1 code page which is quite useful for me. I rolled my own button and encoder libraries, but it should be quite easy to replace them if desired.
+Of course a different SSD1306 library could be used but ESP8266_SSD1306 by Daniel Eichhorn with contributions by Fabrice Weinberg has very legible fonts with the complete Latin 1 code page which is quite useful for me. I rolled my own button and encoder libraries, but it should be quite easy to replace them if desired.
 
 # Usage
 
