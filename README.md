@@ -4,33 +4,62 @@ A [PlatformIO](https://platformio.org) project built on an ESP8266 development m
 an SSD1306 128x64 OLED display, and a KY040 rotary encoder with push-button switch that provides a physical interface 
 to a home automation system based on [Domoticz](https://domoticz.com). 
 
-# Inspiration
+# Table of Contents
+  [Inspiration](#inspiration)<br/>
+  [Requirements](#requirements])<br/>
+  [Usage](#usage)<br/>
+  &nbsp;&nbsp;&nbsp;[Display](#display)<br/>
+  &nbsp;&nbsp;&nbsp;[Encoder/push-button](#encoder)<br/>
+  &nbsp;&nbsp;&nbsp;[Display Blanking](#blanking)<br/>
+  &nbsp;&nbsp;&nbsp;[Alerts](#alerts)<br/>
+  [Setup](#setup)<br/>
+  &nbsp;&nbsp;&nbsp;[Zones](#zones)<br/>
+  &nbsp;&nbsp;&nbsp;[Device Status](#status)<br/>
+  &nbsp;&nbsp;&nbsp;[List of Devices](#devices)<br/>
+  &nbsp;&nbsp;&nbsp;[Selector Switches](#selectors)<br/>
+  &nbsp;&nbsp;&nbsp;[Groups](#groups)<br/>
+  &nbsp;&nbsp;&nbsp;[Alerts](#alertsetup)<br/>
+  [Language Support](#nls)<br/>
+  [Config](#config)<br/>
+  [Licence](#licence)
 
-This is based on a similar project, [Kitchen Button](https://github.com/crankyoldgit/Kitchen-Button) by David Conran,
-(crankyoldgit) that uses the same hardware to control [Tasmota](https://github.com/arendst/Tasmota) switches directly. It is a great project and it
+
+<div id="inspiration" />
+
+# Inspiration 
+
+This is based on a similar project, [Kitchen Button](https://github.com/crankyoldgit/Kitchen-Button) by David Conran (crankyoldgit),
+which uses the same hardware to control [Tasmota](https://github.com/arendst/Tasmota) switches directly. It is a great project and it
 works as is. But my home automation system has some devices that are not based on Tasmota which I also wanted to control.
 Furthermore, there are scenes and groups defined in Domoticz which are quite useful.
 
-# Requirements
+<div id="requirements" />
+
+# Requirements 
 
 There is one requirement on the Domoticz server. The `MQTT Client Gatewway with LAN interface` hardware
 has to be set up in Domoticz and its `Publish Topic` field has to be set to `out`.
 
 The following libraries are used
 
-    ESP8266_SSD1306
-    WifiManager
-    PubSubClient
-    bblanchon/ArduinoJson
+    squix78/ESP8266 and ESP32 OLED driver for SSD1306 displays@^4.2.0
+    WifiManager@^0.14
+	PubSubClient@^2.8
+	bblanchon/ArduinoJson@^6.17.2
     https://github.com/sigmdel/mdPushButton.git
     https://github.com/sigmdel/mdRotaryEncoder.git  
 
-Of course a different SSD1306 library could be used but ESP8266_SSD1306 by Daniel Eichhorn with contributions by Fabrice Weinberg has very legible fonts with the complete Latin 1 code page which is quite useful for me. I rolled my own button and encoder libraries, but it should be quite easy to replace them if desired.
+Of course a different SSD1306 library could be used but `ESP8266 and ESP32 OLED driver for SSD1306 displays` (formerly named `ESP8266_SSD1306`) by Daniel Eichhorn with contributions by Fabrice Weinberg has very legible fonts with the complete Latin 1 code page which is quite useful for me. I rolled my own button and encoder libraries, but it should be quite easy to replace them if desired.
+
+<div id="usage" />
 
 # Usage
 
-The user interface consists of a small display and a rotary button with push-button action. Using such a
-simple device must be necessarily simple. 
+The user interface consists of a small display and a rotary button with push-button action. Use of such a
+simple device must necessarily be straightforward and intuitive. Hopefully, a balance between functionality 
+and ease of use has been reached.
+
+<div id="display" />
 
 ## Display
 
@@ -40,7 +69,7 @@ is divided into three lines or rows. Here is a virtual device in Domoticz that c
     +-----------------+
     |     Bedroom     |  TOP_ROW    contains the device location or zone
     |  Ceiling Light  |  MIDDLE_ROW contains the device name
-    |      Off        |  BOTTOM_ROW contains the device status, if it has a status
+    |      Off        |  BOTTOM_ROW contains the device status if it has a status
     +-----------------+
 
 Here is a dimmer with brightness set at 70%. 
@@ -59,9 +88,12 @@ Domoticz scenes do not have a status.
     |                 |
     +-----------------+
 
+
+<div id="encoder" />
+
 ## Encoder/push-button
 
-Rotating the encoder clockwise or counterclockwise will show the status of the next or previous device. 
+Rotating the encoder clockwise or counterclockwise will show the status of the next or the previous device. 
 
 Pressing the encoder push-button once will change the status and thus toggle the corresponding IoT device. A lamp will
 be turned off or on. A dimmer will be turned off or on without changing its brightness level, at least
@@ -82,12 +114,21 @@ Pressing the push-button once sets the dimmer at the shown level and leaves the 
 Pressing the push-button twice exits the brightness editing mode directly without changing the device.
 
 Domoticz also has selector switches which select one value from a given number of possibilities. 
-These are edited in the same manner as dimmer brightness is.
+These are edited in the same manner as dimmer brightness is: 
+
+  1. press the push button twice to enter the selector value editing mode,
+  2. turn the rotary encoder to go to the next or the previous selector value,
+  3. press the push button once to select the displayed selector value and to exit the selector value editing mode,
+  4. press the push button twice to exit the selector value editing mode without changing the current selector value.
+
+<div id="blanking" />
 
 ## Display Blanking
 
 After 15 seconds of inactivity, the display is blanked. Pressing the push-button or turning the rotary encoder one
 step restores the display. That initial wake up button press or encoder step is ignored.
+
+<div id="alerts" />
 
 ## Alerts
 
@@ -96,9 +137,13 @@ alerts associated with the garage door. The first shows when the garage door is 
 automatic garage door closing has been disabled. Of course if automatic garage door closing is activated, then the first
 alert will no longer be shown once the automation kicks in, assuming nothing impeded the progress of the door.
 
+<div id="setup" />
+
 # Setup
 
 Unlike some web interfaces to Domoticz, the Domoticz Button will not obtain a list of devices from the home automation server. The content of `devices.h` and `devices.cpp` must be modified to point to the Domoticz virtual devices that are to be controlled by the button.
+
+<div id="zones" />
 
 ## Zones
 
@@ -113,29 +158,33 @@ First define the zones in the house to which devices belong. The enumerated type
       Z_HOUSE
     };
 
-My zones correspond to the floors in the house, but you may prefer to use
-bedrooms or a mixture of both. It does not matter, but remember that these zones correspond to the top row in the display.
+My zones correspond to the floors in the house, but you may prefer to use bedrooms or a mixture of both. 
+It does not matter, but remember that these zones correspond to the top row in the display.
 
 Adjust their names in the `zones[]` array of string in `devices.cpp`. Don't forget that the width of the display is limited.
 
-## Device Type
+<div id="status"/>
 
-Second adjust the types of device status messages that can occur in `devices.h`.
+## Device Status
+
+Second adjust the enumeration of device status messages that can occur in `devices.h`.
 
     // primary device status
     enum devstatus_t { 
         DS_NONE,             // scenes have no status
         DS_OFF, DS_ON,       // lights, dimmers and groups when all devices either on or off
-        DS_MIXED,            // groups when some devices on and some device off
+        DS_MIXED,            // groups when some member devices are on and others off
         DS_NO, DS_YES,       // automatic garage closing device
         DS_CLOSED, DS_OPEN,  // garage door state
         DS_DEFAULT, DS_WEEKEND, DS_HOLIDAYS // calendar
     }; 
 
 The first three are found in all systems. Since I have groups in Domoticz,
-the `DS_MIXED` status is included. It indicates that some devices in a group are on while others are off. The other four status correspond to the automatic garage door closer and the garage door state already mentioned above. The last three are possible values of a selector switch that is used to select a scheduling calendar in Domoticz.
+the `DS_MIXED` status is included. It indicates that some devices in a group are on while others are off. The other four status correspond to the automatic garage door closer and the garage door state mentionned above. The last three are possible values of a selector switch that is used to select a scheduling calendar in Domoticz.
 
 The string representations of all these status is in the `devicestatus[]` array of strings. These are displayed on the third line of the OLED display.
+
+<div id="devices" />
 
 ## List of Devices
 
@@ -152,7 +201,7 @@ The "hard work" now begins. A list of all Domoticz devices to be controlled by t
 
 The `status` is updated by the application, just put a reasonable value in the
 first field. The extra status, `xstatus`, is usually the brightness level of a dimmer switch or the current selection of a selector switch. Again this will be updated by the 
-application, so an intial value of 0 is fine.  The `idx` field is the Domoticz idx for a device. The
+application, so an initial value of 0 is fine.  The `idx` field is the Domoticz idx for a device. The
 device type and zone should be self-explanatory. The last field is the device
 name. It will be shown in the middle row of the display. As can be seen, 
 14-letter names can be shown with the chosen font.
@@ -174,9 +223,11 @@ Here is part of the current definition
 I suggest starting with on/off switches and dimmers. Add selector switches, groups and 
 alerts once the basics are working. 
 
+<div id="selectors" />
+
 ## Selector Switches
 
-The extra information needed for each selector switch is defined in the `selectors[]` array in `devices.cpp`. The `selector_t` structure must be filled for each selector.
+The extra information needed for each selector switch is defined in the `selectors[]` array in `devices.cpp. The selector_t structure must be filled for each selector.
 
     typedef struct {
         uint16_t index;        // index of the selecton in devices[]
@@ -184,7 +235,7 @@ The extra information needed for each selector switch is defined in the `selecto
         uint8_t statusCount;   // the number of choices so the last value is (statusCount-1)*10
     } selector_t;
 
-Note that the first field is the selector switch index in the `devices[]` not the Domoticz idx of the switch. That explains why the indices are shown in comments in the `devices` array. To show the correct status of a selector switch, the enumerated `devtype_t` of its first possible value must be specified in the `status0` field.  To correctly edit this value, the number selector choices or status must be specified in the `statusCount`.
+Note that the first field is the selector switch index in the devices[] not the Domoticz idx of the switch. That explains why the indices are shown in comments in the devices array. To show the correct status of a selector switch, the enumerated devtype_t of its first possible value must be specified in the status0 field. To correctly edit this value, the number selector choices or status must be specified in the statusCount.
 
     // Selectors. Currently there are two selectors in the table
     selector_t selectors[] {
@@ -194,6 +245,8 @@ Note that the first field is the selector switch index in the `devices[]` not th
 
 For example, the scheduling calendar selector has three possible values:
 `DS_DEFAULT`, `DS_WEEKEND` and `DS_HOLIDAYS`, so its `status0` field is set to `DS_DEFAULT` and that way when editing that extra value, the application knowns what to display for the three possible selection values.
+
+<div id="groups" />
 
 ## Groups
 
@@ -207,6 +260,8 @@ Unfortunately, Domoticz does not send an MQTT message to update the status of a 
 
 Again the first field is the group index in the `devices[]` not the Domoticz idx of the group. The second field is the number of member devices and finally there's a list of the indices of the member devices. Currently the limit on the number of device is set at 5. 
 
+<div id="alertsetup" />
+
 ## Alerts
 
 Alerts are simply defined by an index in the `devices[]` array identifying the device that can raise an alert and a condition which is nothing else than its status.
@@ -218,6 +273,14 @@ Alerts are simply defined by an index in the `devices[]` array identifying the d
 
 For example, an alert is raised when automatic garage door closing is disabled. The virtual Domoticz device for this is a selector switch and the disable setting is the first selector level which is 0. So the `alert_t` structure for that alert is `{15,0}`.
 
+<div id="nls" />
+
+# Language Support
+
+Rudimentary support for showing English or French text on the OLED display was added in version 0.1.1. It would be a simple matter to add another language. See the comment at the beginning of `lang.h` for an explanation. Contributions for other languages are most welcomed.
+
+<div id="config" />
+
 # Config.h
 
 A number of parameters can be set in the `config.h` header file. Currently, these
@@ -228,7 +291,13 @@ are
    4. The display timeout interval.
    5. The alert on and off flash interval.
 
-While fields for the MQTT user and password are in place, secure connections for MQTT messages is not yet implemented. Similarly the host name can be specified but this has currently no consequence.
+While fields for the MQTT user and password are in place, secure connections for MQTT messages is not yet implemented. 
+
+This is a temporary implementation just pulled from another project where the user could modify the values of the `config` structure
+in a Web page. Since there's no point in running a Web server on the defined configuration could . I will be looking into a better
+way of handling configuration parameters. Hopefully, the `config` struct will not need to be modified. 
+
+<div id="licence" />
 
 # Licence
 
