@@ -26,6 +26,7 @@
 #include "config.h"
 #include "logging.h"
 #include "devices.h"
+#include "sota.h"
 #include "roboto14.h"
 #include "lang.h"
 
@@ -366,21 +367,20 @@ void mqttReconnect(void) {
   if (mqtt_client.connect(config.hostname)) {
     sendToLogPf(LOG_INFO, PSTR("Reconnected to MQTT broker %s as %s"), config.mqttHost, config.hostname);
     display.clear();
-    display.drawString(64, TOP_ROW, SC_MQTT_CONNECTED_TOP);
-    display.drawString(64, MIDDLE_ROW, SC_MQTT_CONNECTED_MIDDLE);
-    display.drawString(64, BOTTOM_ROW, SC_MQTT_CONNECTED_BOTTOM);
+    display.drawString(64, TOP_ROW,    SC_MQTT_CONNECTED0); // "Connected to" / "Connecté au"
+    display.drawString(64, MIDDLE_ROW, SC_MQTT_CONNECTED1); // "MQTT broker"  / "serveur MQTT"
+    display.drawString(64, BOTTOM_ROW, SC_MQTT_CONNECTED2); // "Updating..."  / "Mise à jour..."
     display.display();    
-
     mqttSubscribe();
     delay(config.mqttUpdateTime);
   } else {
     sendToLogP(LOG_ERR, PSTR("Could not connect to MQTT broker"));  
     display.clear();
-    display.drawString(64, TOP_ROW, SC_MQTT_NOT_CONNECTED_TOP);
-    display.drawString(64, MIDDLE_ROW, SC_MQTT_NOT_CONNECTED_MIDDLE);
-    display.drawString(64, BOTTOM_ROW, SC_MQTT_NOT_CONNECTED_BOTTOM);
+    display.drawString(64, TOP_ROW,    SC_MQTT_NOT_CONNECTED0); // "Not connected"  / "Déconnecté du"
+    display.drawString(64, MIDDLE_ROW, SC_MQTT_NOT_CONNECTED1); // "to MQTT broker" / "serveur MQTT"
+    display.drawString(64, BOTTOM_ROW, SC_MQTT_NOT_CONNECTED2); // "..."            / "..."
     display.display();     
-    delay(config.mqttUpdateTime/2);
+    delay(config.infoTime);
   }
 }
 
@@ -408,6 +408,7 @@ void updateGroupStatus(void) {
     }  
   }
 }
+
 
 /*************************/
 /* * * Update alerts * * */
@@ -533,6 +534,14 @@ void setup() {
   display.setFont(Roboto_14);
   display.setTextAlignment(TEXT_ALIGN_CENTER);
 
+  display.clear();
+  display.drawString(64, TOP_ROW, config.hostname);
+  display.drawString(64, MIDDLE_ROW, SC_FIRMWARE_VERSION); // "version" / "version"
+  display.drawString(64, BOTTOM_ROW, String(VERSION));
+  display.display();
+  delay(config.infoTime);
+
+
   // init rotary encoder
   rotary.setLimits(deviceCount-1);
   rotary.setPosition(0); // start at 
@@ -545,11 +554,34 @@ void setup() {
   setup_wifi();
  
   display.clear();
-  display.drawString(64, TOP_ROW, SC_WIFI_CONNECTED);
-  display.drawString(64, MIDDLE_ROW, WiFi.localIP().toString());
-  display.drawString(64, BOTTOM_ROW, SC_UPDATING_DEVICES);
+  display.drawString(64, TOP_ROW,    (SC_WIFI_CONNECTED0 == "%IP%") ? WiFi.localIP().toString() : SC_WIFI_CONNECTED0);
+  display.drawString(64, MIDDLE_ROW, (SC_WIFI_CONNECTED1 == "%IP%") ? WiFi.localIP().toString() : SC_WIFI_CONNECTED1);
+  display.drawString(64, BOTTOM_ROW, (SC_WIFI_CONNECTED2 == "%IP%") ? WiFi.localIP().toString() : SC_WIFI_CONNECTED2);
   display.display();
-  delay(config.staIpTime);
+  delay(config.infoTime);
+
+  switch (checkForUpdates()) {
+    case OTA_NEW_VERSION_LOADED:
+      display.clear();
+      display.drawString(64, TOP_ROW,    SC_FIRMWARE_LOADED0);  // "New firmware" / "Nouveau"
+      display.drawString(64, MIDDLE_ROW, SC_FIRMWARE_LOADED1);  // "loaded"       / "micrologiciel"  
+      display.drawString(64, BOTTOM_ROW, SC_FIRMWARE_LOADED2);  // ""             / "téléchargé"
+      display.display();
+      delay(config.infoTime);
+      doRestart();
+      break;
+    case OTA_FAILED:
+      display.clear();
+      display.drawString(64, TOP_ROW, SC_FIRMWARE_FAIL0);     //"Failed to load" / "Échec en"
+      display.drawString(64, MIDDLE_ROW, SC_FIRMWARE_FAIL1);  //"new firmware"   / "chargeant le"
+      display.drawString(64, BOTTOM_ROW, SC_FIRMWARE_FAIL2);  //""               / "micrologiciel"
+      display.display();
+      delay(config.infoTime);
+      break;
+   case OTA_NO_NEW_VERSION: 
+     /* continue */
+     break;
+  }   
 
   // Finish setup of the mqtt clent object.
   sendToLogP(LOG_DEBUG, PSTR("MQTT setup"));

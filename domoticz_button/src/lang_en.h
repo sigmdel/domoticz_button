@@ -18,17 +18,28 @@
 #define SC_ACCESS_POINT "Access Point"
 
 // mqttReconnect()
-#define SC_MQTT_CONNECTED_TOP "Connected to"
-#define SC_MQTT_CONNECTED_MIDDLE "MQTT broker"
-#define SC_MQTT_CONNECTED_BOTTOM "Updating..."
+#define SC_MQTT_CONNECTED0 "Connected to"
+#define SC_MQTT_CONNECTED1 "MQTT broker"
+#define SC_MQTT_CONNECTED2 "Updating..."
 
-#define SC_MQTT_NOT_CONNECTED_TOP "Not connected"
-#define SC_MQTT_NOT_CONNECTED_MIDDLE "to MQTT broker"
-#define SC_MQTT_NOT_CONNECTED_BOTTOM "..."
+#define SC_MQTT_NOT_CONNECTED0 "Not connected"
+#define SC_MQTT_NOT_CONNECTED1 "to MQTT broker"
+#define SC_MQTT_NOT_CONNECTED2 "..."
 
 // setup()
-#define SC_WIFI_CONNECTED "Connected as"
-#define SC_UPDATING_DEVICES "Updating..."
+#define SC_FIRMWARE_VERSION "version"
+
+#define SC_WIFI_CONNECTED0 "Connected as"
+#define SC_WIFI_CONNECTED1 "%IP%"
+#define SC_WIFI_CONNECTED2 "Firmware check..."
+
+#define SC_FIRMWARE_LOADED0 "New firmware"
+#define SC_FIRMWARE_LOADED1 "loaded" 
+#define SC_FIRMWARE_LOADED2 "" 
+
+#define SC_FIRMWARE_FAIL0 "Failed to load"
+#define SC_FIRMWARE_FAIL1 "new firmware"
+#define SC_FIRMWARE_FAIL2 ""
 
 /* * * devices.cpp * * */
 

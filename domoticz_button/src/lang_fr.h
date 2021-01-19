@@ -18,17 +18,28 @@
 #define SC_ACCESS_POINT "Point d'accès"
 
 // mqttReconnect()
-#define SC_MQTT_CONNECTED_TOP "Connecté au"
-#define SC_MQTT_CONNECTED_MIDDLE "serveur MQTT"
-#define SC_MQTT_CONNECTED_BOTTOM "Mise à jour..."
+#define SC_MQTT_CONNECTED0 "Connecté au"
+#define SC_MQTT_CONNECTED1 "serveur MQTT"
+#define SC_MQTT_CONNECTED2 "Mise à jour..."
 
-#define SC_MQTT_NOT_CONNECTED_TOP "Déconnecté du"
-#define SC_MQTT_NOT_CONNECTED_MIDDLE "serveur MQTT"
-#define SC_MQTT_NOT_CONNECTED_BOTTOM "..."
+#define SC_MQTT_NOT_CONNECTED0 "Déconnecté du"
+#define SC_MQTT_NOT_CONNECTED1 "serveur MQTT"
+#define SC_MQTT_NOT_CONNECTED2 "..."
 
 // setup()
-#define SC_WIFI_CONNECTED "Connecté"
-#define SC_UPDATING_DEVICES "Mise à jour..."
+#define SC_FIRMWARE_VERSION "version"
+
+#define SC_WIFI_CONNECTED0 "Connecté"
+#define SC_WIFI_CONNECTED1 "%IP%"
+#define SC_WIFI_CONNECTED2 "Micrologiciel ?"
+
+#define SC_FIRMWARE_LOADED0 "Nouveau"
+#define SC_FIRMWARE_LOADED1 "micrologiciel"
+#define SC_FIRMWARE_LOADED2 "téléchargé"  
+
+#define SC_FIRMWARE_FAIL0 "Échec en"
+#define SC_FIRMWARE_FAIL1 "chargenant le"
+#define SC_FIRMWARE_FAIL2 "micrologiciel"
 
 
 /* * * devices.cpp * * */
