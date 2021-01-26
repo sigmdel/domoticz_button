@@ -5,11 +5,11 @@
 /* * * main.cpp * * */
 
 // function displayDevice()
-#define SC_EM_DIM_LEVEL "< %d >" 
-#define SC_EM_SELECTOR "< %s >"
-#define SC_EM_DEVICE_DIMMER "%s @ %d%%"
-#define SC_EM_DEVICE_SELECTOR "%s"
-#define SC_EM_DEVICE_OTHER "%s"
+#define SC_BM_DIM_LEVEL "< %d >" 
+#define SC_BM_SELECTOR "< %s >"
+#define SC_BM_DEVICE_DIMMER "%s @ %d%%"
+#define SC_BM_DEVICE_SELECTOR "%s"
+#define SC_BM_DEVICE_OTHER "%s"
 
 // function doRestart()
 #define SC_RESTARTING "Redémarrage..." 
