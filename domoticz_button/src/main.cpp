@@ -6,34 +6,39 @@
    Based on the Kitchen Button by David Conran (crankyoldgit)
    @ https://github.com/crankyoldgit/Kitchen-Button
   
-   MQTT has to be enabled in Domoticz.
-
-   https://www.domoticz.com/wiki/MQTT
-   MQTT
+   MQTT has to be enabled in Domoticz. See the MQTT wiki page 
+   @ https://www.domoticz.com/wiki/MQTT
 */
 
-#include <Arduino.h>
-#include "SSD1306Wire.h"
-#include <ESP8266WiFi.h>
-#include <ESP8266mDNS.h>
-#include <WiFiClient.h>
-#include <WiFiManager.h>
-#include <ESP8266HTTPClient.h>
-#include <PubSubClient.h>
-#include <ArduinoJson.h>
-#include "mdRotaryEncoder.h"
-#include "mdPushButton.h"
-#include "config.h"
-#include "logging.h"
-#include "devices.h"
-#include "sota.h"
-#include "roboto14.h"
-#include "lang.h"
+#include <Arduino.h>            // framework for platformIO
+
+#include <ESP8266WiFi.h>        // WiFi support for ESP8266
+//#include <ESP8266mDNS.h>        // Multicast DNS (local host name to IP resolver)
+//#include <WiFiClient.h>
+#include <WiFiManager.h>        // WiFi configuration utility
+#include <ESP8266HTTPClient.h>  // HTTP protocol support for ESP8266
+#include <PubSubClient.h>       // MQTT client for Arduino framework
+#include <ArduinoJson.h>        // JSON library
+
+#include "SSD1306Wire.h"        // hardware driver for SSD1306 OLED display
+#include "roboto14.h"           // OLED display font
+#include "mdRotaryEncoder.h"    // hardware driver for rotary encoder
+#include "mdPushButton.h"       // hardware driver for push button
+
+#include "logging.h"             // logging to UART and syslog server
+#include "config.h"              // application configuration
+#include "sota.h"                // OTA firmware update
+#include "lang.h"                // i8n
+
+#include "devices.h"             // definitions of Domoticz devices, groups and scenes 
+
+
+#ifndef SERIAL_BAUD
+  #define SERIAL_BAUD 115200
+#endif  
 
 WiFiClient mqttClient;
-WiFiClient httpClient;
 PubSubClient mqtt_client(mqttClient);
-
 
 
 /* * * Domoticz button mode * * */
@@ -137,13 +142,14 @@ void doUpdateDisplay(void) {
 /***********************/
 
 void doRestart(bool resetCredentials = false) {  
-  if (resetCredentials) 
-    WiFi.disconnect(true);
+  if (resetCredentials) {
+    WiFi.disconnect(true); // forget Wi-Fi credentials, will create Access point on reboot
+  }  
   sendToLogPf(LOG_INFO, PSTR("Restarting %s"), APP_NAME);
   display.clear();
   display.drawString(64, MIDDLE_ROW, SC_RESTARTING);
   display.display();
-  delay(config.restartMsgTime);  // Enough time for messages to be sent.
+  delay(config.infoTime);  // Enough time for messages to be sent.
   ESP.restart();
   while (1) ; //ensure this functino does not return.
 }
@@ -444,7 +450,13 @@ void OnButtonClicked(int n) {
 
   if (n < 0) {
     sendToLogP(LOG_INFO, PSTR("Button held down for long press"));
-    doRestart(true);
+    doRestart(true);  // Reload configuration and then forget WiFi credentials and then reboot
+  }
+
+  if (n > 3) {
+    sendToLogP(LOG_INFO, PSTR("Reload configuration"));
+    if (updateConfig()) doRestart();
+    // should display a message on display!!!
   }
 
   if (editmode == EM_STATUS) {
@@ -568,6 +580,7 @@ void setup() {
       display.drawString(64, BOTTOM_ROW, SC_FIRMWARE_LOADED2);  // ""             / "téléchargé"
       display.display();
       delay(config.infoTime);
+      clearEEPROM();         // will use default configuration on next boot, but keeps WiFi credentials
       doRestart();
       break;
     case OTA_FAILED:
@@ -606,6 +619,12 @@ void setup() {
 #ifdef FAKE_OPEN_GARAGE_DOOR
 unsigned long FAKEopenTime = millis();
 #endif
+
+// Timer to avoid trying to reconnect to the MQTT broker in a tight
+// loop which will prevent processing button presses. Waiting
+// 1 minute between attemps seems reasonable
+#define MQTT_CONNECT_INTERVAL 60000   
+unsigned long lastMqttConnectAttempt = 0;
 
 void loop(void) {
 #ifdef FAKE_OPEN_GARAGE_DOOR
@@ -646,8 +665,10 @@ void loop(void) {
   }
   
   if (!mqtt_client.connected()) {
-    // Serial.println("Disconnected. Reconnecting");
-    mqttReconnect();
+   if (millis() - lastMqttConnectAttempt > MQTT_CONNECT_INTERVAL) {
+     lastMqttConnectAttempt = millis();
+      mqttReconnect();
+   }   
   } else {
     mqtt_client.loop();
   }  

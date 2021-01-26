@@ -55,7 +55,7 @@
 #define SC_STATUS_MIXED "·/¤"
 #define SC_STATUS_NO "Non"
 #define SC_STATUS_YES "Oui"
-#define SC_STATUS_CLOSED "Fermer"
+#define SC_STATUS_CLOSED "Fermée"
 #define SC_STATUS_OPEN "Ouverte"
 #define SC_STATUS_TIMER_PLAN0 "Normal"
 #define SC_STATUS_TIMER_PLAN1 "Absent"

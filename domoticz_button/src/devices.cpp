@@ -47,6 +47,9 @@ const char * devicetypes[] = {"switch", "dimmer", "push off", "contact", "select
 // are grouped by the room or zone in which they are located
 
 device_t devices[] {
+  //                    x=xstatus
+  //                    x
+  //          statu     x  idx     type        zone        name
   /* 00 */   {DS_OFF,   0,   5, DT_SWITCH,   Z_TOP_FLOOR, "Lampe Alice"},
   /* 01 */   {DS_OFF,   0,   6, DT_SWITCH,   Z_TOP_FLOOR, "Lampe Michel"},
   /* 02 */   {DS_NONE,  0,   5, DT_GROUP,    Z_TOP_FLOOR, "Lampes de chevet"},

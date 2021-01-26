@@ -20,6 +20,7 @@ to a home automation system based on [Domoticz](https://domoticz.com).
   &nbsp;&nbsp;&nbsp;[Groups](#groups)<br/>
   &nbsp;&nbsp;&nbsp;[Alerts](#alertsetup)<br/>
   [Language Support](#nls)<br/>
+  [Initial Wireless Connections](#wifi)<br/>
   [OTA Firmware Updates](#ota)<br/>
   [Config](#config)<br/>
   [Licence](#licence)
@@ -41,14 +42,16 @@ Furthermore, there are scenes and groups defined in Domoticz which are quite use
 There is one requirement on the Domoticz server. The `MQTT Client Gatewway with LAN interface` hardware
 has to be set up in Domoticz and its `Publish Topic` field has to be set to `out`.
 
-The following libraries are used
+The following libraries (as copied from `platformio.ini`) are used
 
-    squix78/ESP8266 and ESP32 OLED driver for SSD1306 displays@^4.2.0
-    WifiManager@^0.14
-	PubSubClient@^2.8
-	bblanchon/ArduinoJson@^6.17.2
-    https://github.com/sigmdel/mdPushButton.git
-    https://github.com/sigmdel/mdRotaryEncoder.git  
+    lib_deps = 
+        squix78/ESP8266 and ESP32 OLED driver for SSD1306 displays@4.2.0
+        tzapu/WifiManager@0.16
+        knolleary/PubSubClient@2.8
+        bblanchon/ArduinoJson@6.17.2
+        https://github.com/sigmdel/mdPushButton.git
+        https://github.com/sigmdel/mdRotaryEncoder.git
+
 
 Of course a different SSD1306 library could be used but `ESP8266 and ESP32 OLED driver for SSD1306 displays` (formerly named `ESP8266_SSD1306`) by Daniel Eichhorn with contributions by Fabrice Weinberg has very legible fonts with the complete Latin 1 code page which is quite useful for me. I rolled my own button and encoder libraries, but it should be quite easy to replace them if desired.
 
@@ -281,6 +284,26 @@ For example, an alert is raised when automatic garage door closing is disabled. 
 Rudimentary support for showing English or French text on the OLED display was added in version 0.1.1. It would be a simple matter to add another language. See the comment at the beginning of `lang.h` for an explanation. Contributions for other languages are most welcomed.
 
 
+<div id="wifi" />
+
+# Initial Wireless Connections
+
+Wi-Fi credentials (i.e. the wireless network name or SSID and password) are not defined anywhere in the **Domoticz button** firmware. Consequently, the ESP8266 will automatically reconnect to the 
+last used Wi-Fi network if that is possible. 
+
+During the boot process, the button will indicate that it has connected to the Wi-Fi network and report the IP address it obtained from the network DHCP server. It then reports if it has successfully connected to the MQTT server or not. Both of these connections must be established or else the button is rather useless.
+
+Of course, that may not be possible to reconnect to the Wi-Fi network if the last used wireless network is no longer available or if the ESP has never been connected. In that case, the button will start an access point (its own wireless network) and a small web server. The name (SSID) of the network will be shown on the display as well as the IP address of the web server. Log into to that network, using a desktop computer, tablet or smart phone, open URL 192.168.4.1 in a web browser and enter the name of the local wireless network and its password. Once the button has logged into the desired network, it will shut down its own wireless access point.
+
+Once a button has connected to the local Wi-Fi network, it will always reconnect automatically to that network even if a new version of the firmware is loaded into the device or if a new version of the button configuration is loaded as explained below. Normally, that is the desired behaviour. But what if Domoticz is moved to a different wireless network and the original wireless network remains in use? Then the button will keep on logging into the original network. The solution is then to press the push button for two seconds or more. When the button is released, the Wi-Fi credentials will be erased and the button will be restarted. It will start an access point as explained above and it will then be possible to enter the new credentials as explained in the previous paragraph.
+
+If the button logs onto the correct Wi-Fi network but cannot connect to the MQTT broker, then there are two explanations. 
+
+1. The configuration does not contain the correct IP address of the broker. Change the configuration and update it as [explained below](#config).
+
+2. A valid user name and password must be used when connecting and publishing to the MQTT broker. Unfortunately that is not yet implemented. 
+
+
 <div id="ota" />
 
 # OTA Firmware Updates
@@ -303,15 +326,17 @@ Firmware updates are done over-the-air using HTTP requests sent to a Web server 
 Here is how the files for two Domoticz buttons are stored on a Raspberry Pi hosting a Web server. Also shown is the content of one of the `.version` files.
 
     pi@rasberrypi:/var/www/html/domoticz_button $ ls -l
-    total 728
+    total 736
     -rw-r--r-- 1 nestor nestor 365760 Jan 19 12:50 DomoButton-1.bin
-    -rw-r--r-- 1 nestor nestor      4 Jan 19 12:51 DomoButton-1.version
+    -rw-r--r-- 1 nestor nestor    344 Jan 24 15:57 DomoButton-1.config.json
+    -rw-r--r-- 1 nestor nestor      4 Jan 19 18:05 DomoButton-1.version
     -rw-r--r-- 1 nestor nestor 365772 Jan 19 16:15 DomoButton-2.bin
-    -rw-r--r-- 1 nestor nestor      4 Jan 19 16:16 DomoButton-2.version
+    -rw-r--r-- 1 nestor nestor    353 Jan 22 11:31 DomoButton-2.config.json
+    -rw-r--r-- 1 nestor nestor      4 Jan 19 16:15 DomoButton-2.version
     pi@raspberrypi:/var/www/html/domoticz_button $ cat DomoButton-1.version 
-    258
+    259
 
-Note how 258 is the decimal equivalent of 0x000102 which is version 0.1.2.
+Note how 259 is the decimal equivalent of 0x000103 which is version 0.1.3.
 
 Each time `setup()` is run, which occurs whenever the ESP8266 is restarted, the firmware will try to obtain the content of the `.version` file which must be a decimal integer 
 corresponding to the value of the `VERSION` macro defined in the corresponding `.bin` file with the new firmware. If that integer is greater than the `VERSION` macro of the
@@ -320,6 +345,10 @@ firmware currently running on the Domoticz button, then its firmware will be rep
 It is **important** to ensure that the integer contained in the `.version` file exactly matches the version of the accompanying `.bin` file. If the integer contained 
 in `.version` is bigger than `VERSION` coded in the `.bin` file, then the ESP will be caught in an infinite update loop.
 
+Whenever the firmware is updated, the configuration saved in the ESP8266 flash memory will be erased and then the device will be restarted. That means that the default 
+configuration as defined in `config.h` will be used after a firmware update. Since the Wi-Fi credentials are not included in the configuration file, the button should reconnect to 
+the Wi-Fi network.
+
 
 <div id="config" />
 
@@ -327,18 +356,51 @@ in `.version` is bigger than `VERSION` coded in the `.bin` file, then the ESP wi
 
 A number of parameters can be set in the `config.h` header file. Currently, these
 are 
-   1. The IP address of the MQTT host and the MQTT port. 
-   2. The IP address of the syslog host and the syslog port.
-   3. The IP address of the OTA server and its http port.
-   4. The logging level for the UART log sent to the ESP Serial port and the system log sent to the syslog host. 
-   5. A number of time intervals.
+1. The IP address of the MQTT host and the MQTT port. 
+2. The IP address of the syslog host and the syslog port.
+3. The IP address of the OTA server and its http port.
+4. The logging level for the UART log sent to the ESP Serial port and the system log sent to the syslog host. 
+5. A number of time intervals.
 
-While fields for the MQTT user and password are in place, secure connections for MQTT messages is not yet implemented. 
+**While fields for the MQTT user and password are in place, secure connections for MQTT messages is not yet implemented.** 
 
-This is a temporary implementation. Right now, the only way to change the value of a configuration parameter is to generate 
-a new firmware file and either upload it via the serial interface or to perform an OTA update if version 0.1.2 or greater 
-is already running on the ESP. I will be looking into a better way of handling configuration parameters. Hopefully, the
-`config` struct will not need to be modified. 
+Pressing the push button four times or more in quick succession make the button load a new configuration file from the 
+over-the-air update host. A configuration file is a simple JSON file. Here is such a file with the default 
+configuration values.
+
+    pi@rasberrypi:/var/www/html/domoticz_button $ cat DomoButton-1.config.json
+    {
+        "hostname": "DomoButton-1",
+        "mqttHost": "192.168.1.11",
+        "mqttPort": 1883,
+        "mqttUser" : "",
+        "mqttPswd" : "",
+        "mqttBufferSize" : 768,
+        "syslogHost" : "192.168.1.11",
+        "syslogPort" : 514,
+        "otaHost" : "192.168.1.11",
+        "otaPort" : 80,
+        "otaUrlBase" : "/domoticz_button/",
+        "displayTimeout" : 15,
+        "alertTime" : 3,
+        "infoTime" : 3,
+        "restartMsgTime" : 2,
+        "mqttUpdateTime" : 5,
+        "logLevelUart" : "DEBUG",
+        "logLevelSyslog" : "ERR"
+    }
+
+It is not necessary to include all configuration fields in the file. If only the IP address of the MQTT broker needs to
+be changed to 192.168.1.222, then the following will work.
+
+    {
+        "mqttHost": "192.168.1.222"
+    }
+
+When changes to the configuration are done in this fashion, they are saved in the ESP8266 flash memory so that the modified version of the configuration will be used after a reboot.
+
+Be aware that the complete configuration file is processed by the JSON parser at once. So any formatting error in the configuration file will result in no changes being made to the configuration even if the error is only an extra comma in the last key-value pair or after the last } bracket. There are many JSON validators on the Web that can be used to verify the file.
+
 
 <div id="licence" />
 

@@ -5,12 +5,21 @@
 ## Released
 
 
+### 0.1.3 (259)
+
+  - Added over-the-air updating of configuration parameters in `config.cpp`
+  - Updated README.md to explain how to update configuration parameters
+  - Added a section about initial connections in README.md 
+  - Removed extraneous board definition in `[env]` section of `platformio.ini`
+  - Cleaned up library dependencies in `platformio.ini`
+
+
 ### 0.1.2 (258)
 
   - Updated displayed messages at startup and improved translations 
   - Added a new section to README.md on OTA firware updates
   - Version number in decimal now shown in brackets in this file
-  - Added OTA self-updating of the firmware
+  - Added firmware over-the-air self-updating 
   - Removed unused routines in `config.cpp`
   - Added a table of content to README.md
   - Updated `platformio.ini` following the SSD1306 library name change 
