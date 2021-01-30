@@ -8,7 +8,19 @@
   
    MQTT has to be enabled in Domoticz. See the MQTT wiki page 
    @ https://www.domoticz.com/wiki/MQTT
-*/
+
+   TODO - 2020-12-20
+
+    FIX 
+      DT_CONTACT, DT_SELECTOR 
+        - should be last in device types to avoid test in sending command
+          and better handle toggling device
+
+    ADD ?
+      temps/humidity not shown
+      garbage not shown
+      tides not shown
+*/                                                                
 
 #include <Arduino.h>            // framework for platformIO
 
@@ -35,6 +47,11 @@
   #define SERIAL_BAUD 115200
 #endif  
 
+// Experimental "ballistic" encoder rotation
+#ifndef BALLISTIC_ROTATION
+  //#define BALLISTIC_ROTATION
+#endif
+
 WiFiClient mqttClient;
 PubSubClient mqtt_client(mqttClient);
 
@@ -42,25 +59,35 @@ PubSubClient mqtt_client(mqttClient);
 /* * * Domoticz button mode * * */
 
 enum buttonMode_t { 
-   BM_STATUS,       // showing/editing device On/Off status
-                         // rotating the encoder moves to adjacent the device, 
-                         // clicking once toogles the current device on/off
-                         // clicking twice changes to BM_DIM_LEVEL if the current device is a dimmer or BM_SELECTOR if the current device is a selector
-   BM_DIM_LEVEL,    // showing/editing dimmer level 
-                         // rotating the encoder increases/descrease the dim level
-                         // clicking once sets the dim level and change to BM_STATUS
-                         // clicking twice changes to BM_STATUS, the dim level remains at initial value
-   BM_SELECTOR,     // showing/editing selector choice 
-                         // rotating the encoder shows previous/next selector choice
-                         // clicking once sets the selector's choice changes to BM_STATUS
-                         // clicking twice changes to BM_STATUS, the selector choice remains at initial value
-   BM_BLANKED       // showing nothing
-                         // this state is entered when inactivity goes on for more than the config.displayTimeout
-                         // rotating the encoder returns to BM_STATUS
-                         // clicking the switch returns to BM_STATUS
-                         // alerts can be flashed when in this mode
-} buttonMode = BM_STATUS;   
+  BM_STATUS,       // showing/editing device On/Off status
+                        // rotating the encoder moves to adjacent the device, 
+                        // clicking once toogles the current device on/off
+                        // clicking twice changes to BM_DIM_LEVEL if the current device is a dimmer or BM_SELECTOR if the current device is a selector
+  BM_DIM_LEVEL,    // showing/editing dimmer level 
+                        // rotating the encoder increases/descrease the dim level
+                        // clicking once sets the dim level and change to BM_STATUS
+                        // clicking twice changes to BM_STATUS, the dim level remains at initial value
+  BM_SELECTOR,     // showing/editing selector choice 
+                        // rotating the encoder shows previous/next selector choice
+                        // clicking once sets the selector's choice changes to BM_STATUS
+                        // clicking twice changes to BM_STATUS, the selector choice remains at initial value                         
+  BM_BLANKED,      // showing nothing
+                        // this state is entered when inactivity goes on for more than the config.displayTimeout
+                        // rotating the encoder returns to BM_STATUS
+                        // clicking the switch returns to BM_STATUS
+                        // alerts can be flashed when in this mode
+  BM_CONFIGURATION                      
+} buttonMode = BM_CONFIGURATION;   // to ensure setting mode to BM_STATUS in setup()
 
+enum configOptions_t {
+  CO_FIRMWARE_UPDATE,
+  CO_CONFIG_UPDATE,
+  CO_DEFAULT_CONFIG,
+  CO_CLEAR_WIFI,
+  CO_SHOW_INFO,
+  CO_RESTART  
+};
+#define configOptionsCount 6
 
 bool displayNeedsUpdating = true;  // set to true to have the display updated in next loop cycle
 bool displayVisible = true;        // is the display currently visible
@@ -68,7 +95,7 @@ unsigned long timeLastActive;      // used to decide when to turn the display of
 int cdev = 0;                      // index of current device devices array
 int8_t dimLevel = 0;               // temporary dim level 0-10 when editing dimmer
 int8_t selChoice = 0;              // temporary selection choice when editing selector
-
+int8_t configChoice = 0;           // temporary choice in the configuration mode
 
 /************************/
 /* * * OLED display * * */
@@ -83,8 +110,8 @@ int8_t selChoice = 0;              // temporary selection choice when editing se
 
 SSD1306Wire display(0x3c, SDA, SCL, GEOMETRY_128_64);
 
-
 void Show(char* top, char* middle, char* bottom, uint16_t waitTime = 0, bool alert = false) {
+  display.displayOn();
   display.clear();
   display.drawString(64, TOP_ROW, top);
   display.drawString(64, MIDDLE_ROW, middle);
@@ -106,7 +133,7 @@ void displayDevice(uint16_t index, bool alert=false) {
       sprintf(llbuf, SC_BM_DIM_LEVEL, dimLevel * 10);
   } else if (buttonMode == BM_SELECTOR) {
       sprintf(llbuf, SC_BM_SELECTOR, devicestatus[ selChoice + selectors[devices[index].xstatus].status0 ]);
-  } else {  // (editmode == BM_DEVICES)
+  } else {  // (buttonmode == BM_DEVICES)
     if (devices[index].type == DT_DIMMER)
       sprintf(llbuf, SC_BM_DEVICE_DIMMER, devicestatus[devices[index].status], devices[index].xstatus * 10);
     else if (devices[index].type == DT_SELECTOR) {
@@ -117,17 +144,39 @@ void displayDevice(uint16_t index, bool alert=false) {
       sprintf(llbuf, SC_BM_DEVICE_OTHER, devicestatus[devices[index].status]);  
     }  
   } 
-  display.displayOn();
   Show( (char*) zones[devices[index].zone], (char *) devices[index].name, llbuf, 0, alert);
   sendToLogPf(LOG_DEBUG, PSTR("Updated display for device %s.%s, alert %s, edit mode %s"), 
     zones[devices[index].zone], devices[index].name, (alert) ? "yes" : "no", (buttonMode == BM_STATUS) ? "BM_DEVICES" : "BM_DIMMER");
 }
 
+void displayConfiguration(void) {
+  switch (configChoice) {
+    case CO_FIRMWARE_UPDATE: Show( (char*) SC_CO_CONFIGURATION, (char*) SC_CO_FIRMWARE_UPDATE1, (char*) SC_CO_FIRMWARE_UPDATE2); break;
+    case CO_CONFIG_UPDATE: Show( (char*) SC_CO_CONFIGURATION,  (char*) SC_CO_CONFIG_UPDATE1,  (char*) SC_CO_CONFIG_UPDATE2); break;
+    case CO_DEFAULT_CONFIG: Show( (char*) SC_CO_CONFIGURATION,  (char*) SC_CO_DEFAULT_CONFIG1,  (char*) SC_CO_DEFAULT_CONFIG2); break;
+    case CO_CLEAR_WIFI: Show( (char*) SC_CO_CONFIGURATION,  (char*) SC_CO_CLEAR_WIFI1,  (char*) SC_CO_CLEAR_WIFI2); break;
+    case CO_SHOW_INFO: Show( (char*) SC_CO_CONFIGURATION,  (char*) SC_CO_SHOW_INFO1,  (char*) SC_CO_SHOW_INFO2); break;
+    case CO_RESTART: Show( (char*) SC_CO_CONFIGURATION,  (char*) SC_CO_RESTART1,  (char*) SC_CO_RESTART2); break;
+  }  
+}
+
 void doUpdateDisplay(void) {
-  displayDevice(cdev);
+  if (buttonMode == BM_CONFIGURATION)
+    displayConfiguration();
+  else  
+    displayDevice(cdev);
   displayVisible = true;
   displayNeedsUpdating = false;
   timeLastActive = millis();
+}
+
+void displayInfo(void) {
+  Show(config.hostname, (char*) SC_FIRMWARE_VERSION, (char*) String(VERSION).c_str(), config.infoTime);
+  Show((char*) SC_WIFI_CONNECTED0, (char*) WiFi.localIP().toString().c_str(), (char*) "", config.infoTime);
+  if (mqtt_client.connected()) 
+    Show( (char*) SC_MQTT_CONNECTED0, (char*) SC_MQTT_CONNECTED1, (char*) config.mqttHost, config.infoTime);
+  else 
+    Show( (char*) SC_MQTT_NOT_CONNECTED0, (char*) SC_MQTT_NOT_CONNECTED1, (char*) config.mqttHost, config.infoTime);
 }
 
 /***********************/
@@ -155,16 +204,13 @@ void WiFiManagerCallback(WiFiManager *myWiFiManager) {
 
 void setup_wifi(void) {
   delay(10);
-
   //Local WiFiManager, once its business is done, there is no need to keep it around
   WiFiManager wm;
-
+  //wm.resetSettings();
   //set callback that gets called when connecting to previous WiFi fails, and enters Access Point mode
   wm.setAPCallback(WiFiManagerCallback);
   // We start by connecting to a WiFi network
-
   wm.setTimeout(300);  // Time out after 5 mins.
-
   if (!wm.autoConnect())
     // Reboot. A.k.a. "Have you tried turning it Off and On again?"
     doRestart();
@@ -189,7 +235,6 @@ const char dimmercmd[] = "{\"command\":\"switchlight\", \"idx\":%d, \"switchcmd\
 // note 1. only ON possible for scenes
 // note 2. ON or OFF possible for groups
 const char  scenecmd[] = "{\"command\":\"switchscene\", \"idx\":%d, \"switchcmd\":\"%s\"}";
-
 
 void send_domoticz_cmd(int dev, int32_t value, bool isLevel = false) {
   char buffer[MSG_SZ];    
@@ -218,7 +263,6 @@ void send_domoticz_cmd(int dev, int32_t value, bool isLevel = false) {
   mqtt_client.publish(DOMO_SUB_TOPIC, buffer);
   sendToLogPf(LOG_INFO, PSTR("MQTT: publish [%s] %s"), DOMO_SUB_TOPIC, buffer);
 }    
-
 
 void receivingMQTT(char const *topic, String const payload) {
   //sendToLogPf(LOG_DEBUG, PSTR("MQTT rx %s"), payload.c_str()); //payload.substring(0, 80).c_str());
@@ -249,6 +293,7 @@ void receivingMQTT(char const *topic, String const payload) {
     return;
   }
   
+  ////  if (sSwitchType.equals("On/Off"))
   if (sSwitchType == "On/Off")
     devType = DT_SWITCH;
   else if (sSwitchType == "Dimmer")
@@ -311,7 +356,7 @@ void receivingMQTT(char const *topic, String const payload) {
     default: /* DT_SCENE, DT_PUSH_OFF: nothing to do */ break;
   }
 
-  if (i == cdev) 
+  if (i == cdev && displayVisible) 
     displayNeedsUpdating = true;
 
   if (devType == DT_DIMMER || devType == DT_SELECTOR) 
@@ -420,57 +465,151 @@ void doUpdateAlertDisplay(void) {
 mdRotary rotary = mdRotary(pinClk, pinDt);
 mdPushButton pushButton = mdPushButton(pinSw);  // mdPushButton(pinSw, LOW, true)
 
+// Set Button mode 
+
+const char* buttonModes[] = {
+  "STATUS",
+  "DIM_LEVEL",
+  "SELECTOR",
+  "BLANKED",
+  "CONFIGURATION",
+  "UNKNOWN"
+};
+
+void setButtonMode(buttonMode_t mode) {
+  if (mode > BM_CONFIGURATION) 
+    mode = (buttonMode_t) (BM_CONFIGURATION + 1);
+  sendToLogPf(LOG_DEBUG, PSTR("Set buttonmode, currently BM_%s, to BM_%s"), buttonModes[buttonMode], buttonModes[mode]);  
+  if (buttonMode != mode) {
+    if (buttonMode == BM_BLANKED) {
+      if (config.defaultDevice < deviceCount)
+        cdev = config.defaultDevice;  
+      display.displayOn();
+    }
+    switch (mode) {
+      case BM_STATUS:
+        rotary.setLimits(deviceCount-1);
+        rotary.setPosition(cdev);
+        break;
+      case BM_DIM_LEVEL:
+        dimLevel = devices[cdev].xstatus;
+        rotary.setLimits(10);   // dimLevel 0 - 10
+        rotary.setPosition(dimLevel);
+        break;
+      case BM_SELECTOR:
+        selChoice = devices[cdev].status;
+        rotary.setLimits(selectors[devices[cdev].xstatus].statusCount-1);
+        rotary.setPosition(selChoice);
+        break;
+      case BM_BLANKED:
+        displayVisible = false;
+        alertTime = millis();
+        alertVisible = false;
+        display.displayOff();
+        break;
+      case BM_CONFIGURATION:
+        configChoice = 0;
+        rotary.setLimits(configOptionsCount-1);   
+        rotary.setPosition(0);
+        break;
+      default: 
+        sendToLogPf(LOG_ERR, PSTR("invalid buttonmode %d"), mode);  
+        return;
+        break;
+    }      
+    buttonMode = mode;
+    displayNeedsUpdating = (buttonMode != BM_BLANKED);
+  }
+}
+
+void toggleDevice(int dev) {
+  if (devices[dev].type <= DT_GROUP && devices[dev].type != DT_SELECTOR && devices[dev].type != DT_CONTACT) {
+    send_domoticz_cmd(dev, (devices[dev].status ==  DS_OFF) ? 1 : 0); // Turn device Off if it is on or mixed, on if it is off
+    // Domoticz should send an mqtt message once it performs the task and on receiving it
+    // the display will be updated, but groups status will not be updated
+  } else if (devices[dev].type == DT_PUSH_OFF) {
+    send_domoticz_cmd(dev, 0);  // push off buttons can only send off messages
+  } else if (devices[dev].type == DT_SCENE) {
+    send_domoticz_cmd(dev, 1);  // scenes can only be trigerred i.e. turned on
+  } else { 
+    sendToLogPf(LOG_ERR, PSTR("Cannot toggle %s a contact switch"), devices[dev].name);
+    return;
+  }  
+  sendToLogPf(LOG_DEBUG, PSTR("Device %s status changed to %s"), devices[dev].name, devicestatus[devices[dev].status]);
+}
 
 void OnButtonClicked(int n) {
-  sendToLogPf(LOG_DEBUG, PSTR("Button clicked %d times, editmode %s (%d), device %s (%d)"), n, (buttonMode) ? "BM_DIMMER" : "BM_DEVICE", buttonMode, devices[cdev].name, cdev);  
+  sendToLogPf(LOG_DEBUG, PSTR("Button clicked %d times, buttonmode %s (%d), device %s (%d)"), n, buttonModes[buttonMode], buttonMode, devices[cdev].name, cdev);  
 
   if (n < 0) {
-    sendToLogP(LOG_INFO, PSTR("Button held down for long press"));
-    doRestart(true);  // Reload configuration and then forget WiFi credentials and then reboot
+    setButtonMode(BM_CONFIGURATION);
+    return;
   }
 
-  if (n > 3) {
-    sendToLogP(LOG_INFO, PSTR("Reload configuration"));
-    if (updateConfig()) doRestart();
-    // should display a message on display!!!
+  if (buttonMode == BM_BLANKED) {
+    if (n == 1 && config.defaultActive && config.defaultDevice < deviceCount) 
+      toggleDevice(config.defaultDevice);
+    setButtonMode(BM_STATUS); 
+    return;  
   }
 
   if (buttonMode == BM_STATUS) {
     if (n == 1) {
-       if (devices[cdev].type <= DT_GROUP && devices[cdev].type != DT_SELECTOR) {
-         sendToLogPf(LOG_DEBUG, PSTR("Device %s status = %s"), devices[cdev].name, devicestatus[devices[cdev].status]);
-         send_domoticz_cmd(cdev, (devices[cdev].status ==  DS_OFF) ? 1 : 0); // Turn device Off if it is on or mixed, on if it is off
-         // Domoticz should send an mqtt message once it performs the task and on receiving it
-         // the display will be updated, but groups status will not be updated
-       } else if (devices[cdev].type == DT_PUSH_OFF) {
-          send_domoticz_cmd(cdev, 0);  // push off buttons can only send off messages
-       } else if (devices[cdev].type == DT_SCENE) {
-          send_domoticz_cmd(cdev, 1);  // scenes can only be trigerred i.e. turned on
-       }   
+      toggleDevice(cdev);  
     }
     if (n == 2) {
       if (devices[cdev].type == DT_DIMMER) {
-        buttonMode = BM_DIM_LEVEL;
-        dimLevel = devices[cdev].xstatus;
-        rotary.setLimits(10);   // dimLevel 0 - 10
-        rotary.setPosition(dimLevel);
-        displayNeedsUpdating = true; // nothing to do with Domoticz, update the display manully
-        sendToLogPf(LOG_DEBUG, PSTR("editmode set to %s"), "BM_DIMMER");  
+        setButtonMode(BM_DIM_LEVEL);
       } else if (devices[cdev].type == DT_SELECTOR) {
-        buttonMode = BM_SELECTOR;
-        selChoice = devices[cdev].status;
-        rotary.setLimits(selectors[devices[cdev].xstatus].statusCount-1);
-        //rotary.setPosition(dimLevel);
-        displayNeedsUpdating = true; // nothing to do with Domoticz, update the display manully
-        sendToLogPf(LOG_DEBUG, PSTR("editmode set to %s"), "BM_SELECTION");  
+        setButtonMode(BM_SELECTOR);
       }
     }
-    return;   
-  } else if (buttonMode == BM_BLANKED) {
-    buttonMode = BM_STATUS;
-    displayNeedsUpdating = true;
-  } else { // editmode == BM_DIM_LEVEL || BM_SELECTOR
-    
+    return; 
+
+  } else if (buttonMode == BM_CONFIGURATION) {
+    if (n == 1)  {
+      switch (configChoice) {
+          case CO_FIRMWARE_UPDATE:    
+            if (otaUpdate()) {
+              clearEEPROM();         // will use default configuration on next boot, but keeps WiFi credentials
+              sendToLogP(LOG_INFO, PSTR("Download firmware, clear EEPROM and restart")); 
+              doRestart();
+            } else {
+              sendToLogP(LOG_DEBUG, "otaUpdate() failed");
+              Show((char*) SC_FIRMWARE_FAIL0, (char*) SC_FIRMWARE_FAIL1, (char*) SC_FIRMWARE_FAIL2, config.infoTime);
+            } 
+            break;
+          case CO_CONFIG_UPDATE: 
+            if (updateConfig()) {
+              sendToLogP(LOG_INFO, PSTR("Download configuration and restart")); 
+              doRestart();
+            } else {       
+              Show((char*) "Échec en", (char *) "chargeant", (char*) "paramètres", config.infoTime); 
+            }  
+            break;
+          case CO_DEFAULT_CONFIG: 
+            sendToLogP(LOG_INFO, PSTR("Clear EEPROM, use default configuration and restart")); 
+            clearEEPROM();  // otherwise the default will not be used after restart
+            useDefaultConfig();
+            doRestart();
+            break;
+          case CO_CLEAR_WIFI: 
+            sendToLogP(LOG_INFO, PSTR("Clear WiFi credentials and restart")); 
+            doRestart(true); 
+            break;
+          case CO_SHOW_INFO: 
+            sendToLogP(LOG_INFO, PSTR("Show Info")); 
+            displayInfo();
+            break;
+          case CO_RESTART: 
+            sendToLogP(LOG_INFO, PSTR("Restart")); 
+            doRestart(false); 
+            break;
+      }  
+      // fall through if n != 1 or otaUpdate or updateConfig failed
+    }
+
+  } else { // buttonmode == BM_DIM_LEVEL || BM_SELECTOR    
     if (n == 1) {
       if (buttonMode == BM_DIM_LEVEL)
         send_domoticz_cmd(cdev, dimLevel * 10, true);  // domoticz dim level 0-100, dimLevel 0-10
@@ -478,28 +617,62 @@ void OnButtonClicked(int n) {
         send_domoticz_cmd(cdev, selChoice * 10, true);  // domoticz selectchoice 0, 10, 20 ....
         //; //send_domoticz_cmd(cdev )    
     }
-        
-    // if n > 2 don't change dim value or selector choice
-    // return to editing devices no matter the number of button presses
-    buttonMode = BM_STATUS;
-    rotary.setLimits(deviceCount-1);
-    rotary.setPosition(cdev);;
-    sendToLogPf(LOG_DEBUG, PSTR("editmode set to %s"), "BM_DEVICES");  
-    displayNeedsUpdating = true;
-  }    
+    // fall through  
+  }
+
+  setButtonMode(BM_STATUS);
 }
 
+#ifdef BALLISTIC_ROTATION
+
+// Esperiment in implementing a "balistic" rotation handler
+// which moves to the next or previous zone when the
+// button is quickly rotated
+
+unsigned long lastRotationTime = 0;
+int lastdir = 0;
+
 void ButtonRotated(int32_t position) {
-  if (buttonMode == BM_STATUS)
-    cdev = position;
-  else if (buttonMode == BM_DIM_LEVEL)
+  int oldcdev = cdev;
+  if (buttonMode == BM_STATUS) {
+    if (millis() - lastRotationTime > 300) 
+      cdev = position;
+    else {
+      if (position > cdev && lastdir > 0)  
+        cdev = nextZone(cdev);
+      else if (position < cdev && lastdir < 0)
+        cdev = prevZone(cdev);
+      else
+        cdev = position;
+    }
+    lastdir = cdev - oldcdev;
+    lastRotationTime = millis();
+  } else if (buttonMode == BM_DIM_LEVEL)
     dimLevel = position;    
   else if (buttonMode == BM_SELECTOR)
     selChoice = position;  
-  else if (buttonMode == BM_BLANKED)
-    buttonMode = BM_STATUS;  
+  else if (buttonMode == BM_CONFIGURATION)
+    configChoice = position;   
+  else if (buttonMode == BM_BLANKED) {
+    setButtonMode(BM_STATUS);
+  }
   displayNeedsUpdating = true;
 }
+
+#else 
+
+void ButtonRotated(int32_t position) {
+  switch(buttonMode) {
+    case BM_STATUS:        cdev = position; break;
+    case BM_DIM_LEVEL:     dimLevel = position; break;
+    case BM_SELECTOR:      selChoice = position; break;
+    case BM_CONFIGURATION: configChoice = position; break;
+    case BM_BLANKED:       setButtonMode(BM_STATUS); break;
+  }
+  displayNeedsUpdating = true;
+}
+
+#endif
 
 
 /*****************/
@@ -524,35 +697,29 @@ void setup() {
   // show initial screen
   Show(config.hostname, (char*) SC_FIRMWARE_VERSION, (char*) String(VERSION).c_str(), config.infoTime);
 
-  // initialize rotary encoder
-  rotary.setLimits(deviceCount-1);
-  rotary.setPosition(0); // start at 
+  // intialize rotary encoder and push button
   rotary.onButtonRotated(ButtonRotated);
-  
-  // initialize push button 
   pushButton.OnButtonClicked(OnButtonClicked);
- 
+  
   sendToLogP(LOG_DEBUG, PSTR("Starting Wifi radio"));
   setup_wifi();
-  Show(
-      (strcmp(SC_WIFI_CONNECTED0, "%IP%") == 0) ? (char*) WiFi.localIP().toString().c_str() : (char*) SC_WIFI_CONNECTED0, 
-      (strcmp(SC_WIFI_CONNECTED1, "%IP%") == 0) ? (char*) WiFi.localIP().toString().c_str() : (char*) SC_WIFI_CONNECTED1, 
-      (strcmp(SC_WIFI_CONNECTED2, "%IP%") == 0) ? (char*) WiFi.localIP().toString().c_str() : (char*) SC_WIFI_CONNECTED2, 
-      config.infoTime);
+  Show( (char*) SC_WIFI_CONNECTED0,  (char*) WiFi.localIP().toString().c_str(),  (char*) SC_WIFI_CONNECTED2, config.infoTime);
   
-  switch (checkForUpdates()) {
-    case OTA_NEW_VERSION_LOADED:
-      Show((char*) SC_FIRMWARE_LOADED0, (char*) SC_FIRMWARE_LOADED1, (char*) SC_FIRMWARE_LOADED2, config.infoTime);
-      clearEEPROM();         // will use default configuration on next boot, but keeps WiFi credentials
-      doRestart();
+  if (config.autoFirmwareUpdate) {
+    switch (checkForUpdates()) {
+      case OTA_NEW_VERSION_LOADED:
+        Show((char*) SC_FIRMWARE_LOADED0, (char*) SC_FIRMWARE_LOADED1, (char*) SC_FIRMWARE_LOADED2, config.infoTime);
+        clearEEPROM();         // will use default configuration on next boot, but keeps WiFi credentials
+        doRestart();
+        break;
+      case OTA_FAILED:
+        Show((char*) SC_FIRMWARE_FAIL0, (char*) SC_FIRMWARE_FAIL1, (char*) SC_FIRMWARE_FAIL2, config.infoTime);
+        break;
+    case OTA_NO_NEW_VERSION: 
+      /* continue */
       break;
-    case OTA_FAILED:
-      Show((char*) SC_FIRMWARE_FAIL0, (char*) SC_FIRMWARE_FAIL1, (char*) SC_FIRMWARE_FAIL2, config.infoTime);
-      break;
-   case OTA_NO_NEW_VERSION: 
-     /* continue */
-     break;
-  }   
+    }   
+  }
 
   // Finish setup of the mqtt clent object.
   sendToLogP(LOG_DEBUG, PSTR("MQTT setup"));
@@ -562,6 +729,8 @@ void setup() {
   mqtt_client.setServer(config.mqttHost, config.mqttPort);
   mqtt_client.setCallback(mqttCallback);
   mqttReconnect();
+
+  setButtonMode(BM_STATUS);
 
   sendToLogP(LOG_DEBUG, PSTR("Setup completed"));
 }
@@ -603,13 +772,8 @@ void loop(void) {
   if (displayNeedsUpdating) 
     doUpdateDisplay();
 
-  if (displayVisible && millis() - timeLastActive > config.displayTimeout) {
-    displayVisible = false;
-    display.displayOff();
-    alertTime = millis();
-    alertVisible = false;
-    buttonMode = BM_BLANKED;
-  }  
+  if (displayVisible && millis() - timeLastActive > config.displayTimeout) 
+    setButtonMode(BM_BLANKED);
 
   if (!displayVisible && millis() - alertTime > config.alertTime) { // at regular intervals while every 3 seconds change something 
     alertTime = millis(); // restart timer

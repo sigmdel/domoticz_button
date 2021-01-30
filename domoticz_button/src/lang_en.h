@@ -11,6 +11,21 @@
 #define SC_BM_DEVICE_SELECTOR "%s"
 #define SC_BM_DEVICE_OTHER "%s"
 
+// function displayConfiguration()
+#define SC_CO_CONFIGURATION "--Configuration--"
+#define SC_CO_FIRMWARE_UPDATE1 "Download"
+#define SC_CO_FIRMWARE_UPDATE2 "firmware"
+#define SC_CO_CONFIG_UPDATE1 "Download"
+#define SC_CO_CONFIG_UPDATE2 "options"
+#define SC_CO_DEFAULT_CONFIG1 "Use default"
+#define SC_CO_DEFAULT_CONFIG2 "options"
+#define SC_CO_CLEAR_WIFI1 "Clear"
+#define SC_CO_CLEAR_WIFI2 "Wi-Fi"
+#define SC_CO_SHOW_INFO1 "Show"
+#define SC_CO_SHOW_INFO2 "information"
+#define SC_CO_RESTART1 "Restart"
+#define SC_CO_RESTART2 ""
+
 // function doRestart()
 #define SC_RESTARTING "Restarting..." 
 
@@ -30,7 +45,7 @@
 #define SC_FIRMWARE_VERSION "version"
 
 #define SC_WIFI_CONNECTED0 "Connected as"
-#define SC_WIFI_CONNECTED1 "%IP%"
+// SC_WIFI_CONNECTED1 STA_IP
 #define SC_WIFI_CONNECTED2 "Firmware check..."
 
 #define SC_FIRMWARE_LOADED0 "New firmware"

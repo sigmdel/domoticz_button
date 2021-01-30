@@ -59,6 +59,10 @@ void useDefaultConfig(void) {
   strlcpy(config.otaHost, OTA_HOST, URL_SZ);
   config.otaPort = OTA_PORT;
   strlcpy(config.otaUrlBase, OTA_URL_BASE, HOST_NAME_SZ);
+  config.autoFirmwareUpdate =  OTA_AUTO_FIRMWARE_UPDATE;
+  
+  config.defaultDevice = DEFAULT_DEVICE;
+  config.defaultActive = DEFAULT_ACTIVE;
   
   config.displayTimeout = DISPLAY_TIMEOUT*1000;
   config.alertTime = ALERT_TIME*1000;
@@ -125,11 +129,11 @@ void clearEEPROM(void) {
 // updateConfig
 //******************************************************************
 
-void paramNotFound(char* value) {
+void paramNotFound(const char* value) {
   sendToLogPf(LOG_DEBUG, PSTR("Parameter \"%s\" not found in JSON file"), value);
 }
 
-bool obtainJsonStr(DynamicJsonDocument doc, char* value, char* buf, int maxSize) {
+bool obtainJsonStr(DynamicJsonDocument doc, const char* value, char* buf, int maxSize) {
   String sData = doc[value];
   if (!sData.isEmpty() && !sData.equalsIgnoreCase("null")) {
     strlcpy(buf, sData.c_str(), maxSize);
@@ -211,7 +215,6 @@ bool loadJsonConfig(String& filecontent) {
 
 bool updateConfig(void) {
   uint32_t numb;
-  char buffer[32];
   String filecontent;
 
   if (!loadJsonConfig(filecontent)) return false;
@@ -225,34 +228,37 @@ bool updateConfig(void) {
  
   sendToLogP(LOG_INFO, PSTR("Updating configuration from JSON file"));
   
-  obtainJsonStr(doc, "hostname", (char*) &config.hostname, URL_SZ);
+  obtainJsonStr(doc, (char*) "hostname", (char*) &config.hostname, URL_SZ);
 
-  obtainJsonStr(doc, "mqttHost", (char*) &config.mqttHost, URL_SZ);
-  if ( obtainJsonInt(doc, "mqttPort", &numb) ) config.mqttPort = numb;
-  obtainJsonStr(doc, "mqttUser", (char*) &config.mqttUser, SSID_SZ);
-  obtainJsonStr(doc, "mqttPswd", (char*) &config.mqttPswd, PSWD_SZ);
-  if ( obtainJsonInt(doc, "mqttBufferSize", &numb) ) config.mqttBufferSize = numb;
+  obtainJsonStr(doc, (char*) "mqttHost", (char*) &config.mqttHost, URL_SZ);
+  if ( obtainJsonInt(doc, (char*) "mqttPort", &numb) ) config.mqttPort = numb;
+  obtainJsonStr(doc, (char*) "mqttUser", (char*) &config.mqttUser, SSID_SZ);
+  obtainJsonStr(doc, (char*) "mqttPswd", (char*) &config.mqttPswd, PSWD_SZ);
+  if ( obtainJsonInt(doc, (char*) "mqttBufferSize", &numb) ) config.mqttBufferSize = numb;
 
-  obtainJsonStr(doc, "syslogHost", (char*) &config.syslogHost, URL_SZ);
-  if ( obtainJsonInt(doc, "syslogPort", &numb) ) config.syslogPort = numb;
+  obtainJsonStr(doc, (char*) "syslogHost", (char*) &config.syslogHost, URL_SZ);
+  if ( obtainJsonInt(doc, (char*) "syslogPort", &numb) ) config.syslogPort = numb;
   
-  obtainJsonStr(doc, "otaHost", (char*) &config.otaHost, URL_SZ);
-  if ( obtainJsonInt(doc, "otaPort", &numb) ) config.otaPort = numb;
-  obtainJsonStr(doc, "otaUrlBase", (char*) &config.otaUrlBase, URL_SZ);
+  obtainJsonStr(doc, (char*) "otaHost", (char*) &config.otaHost, URL_SZ);
+  if ( obtainJsonInt(doc, (char*) "otaPort", &numb) ) config.otaPort = numb;
+  obtainJsonStr(doc, (char*) "otaUrlBase", (char*) &config.otaUrlBase, URL_SZ);
+  if ( obtainJsonInt(doc, (char*) "autoFirmwareUpdate", &numb) ) config.autoFirmwareUpdate = numb;
 
-  if (obtainJsonInt(doc, "displayTimeout", &numb)) config.displayTimeout = numb*1000;
-  if (obtainJsonInt(doc, "alertTime", &numb)) config.alertTime = numb*1000;
-  if (obtainJsonInt(doc, "infoTime", &numb)) config.infoTime = numb*1000;
-  if (obtainJsonInt(doc, "mqttUpdateTime", &numb)) config.mqttUpdateTime = numb*1000;
-  if (obtainJsonInt(doc, "mqttUpdateTime", &numb)) config.mqttUpdateTime = numb*1000;
+  if ( obtainJsonInt(doc, (char*) "defaultDevice", &numb) ) config.defaultDevice = numb;
+  if ( obtainJsonInt(doc, (char*) "defaultActive", &numb) ) config.defaultActive = numb;
 
-  if (obtainJsonLevel(doc, "logLevelUart", (uint8_t*) &numb)) config.logLevelUart = numb;
-  if (obtainJsonLevel(doc, "logLevelSyslog", (uint8_t*) &numb)) config.logLevelSyslog = numb;    
+  if (obtainJsonInt(doc, (char*) "displayTimeout", &numb)) config.displayTimeout = numb*1000;
+  if (obtainJsonInt(doc, (char*) "alertTime", &numb)) config.alertTime = numb*1000;
+  if (obtainJsonInt(doc, (char*) "infoTime", &numb)) config.infoTime = numb*1000;
+  if (obtainJsonInt(doc, (char*) "mqttUpdateTime", &numb)) config.mqttUpdateTime = numb*1000;
+
+  if (obtainJsonLevel(doc, (char*) "logLevelUart", (uint8_t*) &numb)) config.logLevelUart = numb;
+  if (obtainJsonLevel(doc, (char*) "logLevelSyslog", (uint8_t*) &numb)) config.logLevelSyslog = numb;    
 
   if (getConfigHash() != config.checksum) {
     config.checksum = getConfigHash();
-    // do some sanity verifications ?
-    // mqttHost == "" or mqttPort == "" or hostname == "" then reload configuration
+    /// do some sanity verifications ?
+    /// mqttHost == "" or mqttPort == "" or hostname == "" then reload configuration
     saveConfigToEEPROM(); 
   }
   return true;
@@ -284,6 +290,9 @@ void dumpConfig(config_t * cfg, char * msg) {
   Serial.printf("  otaHost: \"%s\"\n", cfg->otaHost);
   Serial.printf("  otaPort: %d\n", cfg->otaPort);
   Serial.printf("  otaUrlBase: \"%s\"\n", cfg->otaUrlBase);
+  Serial.printf("  autoFirmwareUpdate: %d\n", cfg->autoFirmwareUpdate);
+  Serial.printf("  defaultDevice: %d\n", cfg->defaultDevice);
+  Serial.printf("  defaultActive: %d\n", cfg->defaultActive);
   Serial.printf("  displayTimeout: %d\n", cfg->displayTimeout);
   Serial.printf("  alertTime: %d\n", cfg->alertTime);
   Serial.printf("  infoTime: %d\n", cfg->infoTime);
@@ -291,6 +300,32 @@ void dumpConfig(config_t * cfg, char * msg) {
   Serial.printf("  logLevelUart: %d\n", cfg->logLevelUart);
   Serial.printf("  logLevelSyslog: %d\n", cfg->logLevelSyslog);
   Serial.printf("  checksum: 0x%08X\n", cfg->checksum);
+}  
+
+void dumpConfigJson(config_t * cfg, char * msg) { 
+  Serial.println(msg);
+  Serial.println("{");
+  Serial.printf("  \"hostname\": \"%s\",\n", cfg->hostname);
+  Serial.printf("  \"mqtthost\": \"%s\",\n", cfg->mqttHost);
+  Serial.printf("  \"mqttPort\": %d,\n", cfg->mqttPort);
+  Serial.printf("  \"mqttUser\": \"%s\",\n", cfg->mqttUser);
+  Serial.printf("  \"mqttPswd\": \"%s\",\n", cfg->mqttPswd);
+  Serial.printf("  \"mqttBufferSize\": %d,\n", cfg->mqttBufferSize);
+  Serial.printf("  \"syslogHost\": \"%s\",\n", cfg->syslogHost);
+  Serial.printf("  \"syslogPort\": %d,\n", cfg->syslogPort);
+  Serial.printf("  \"otaHost\": \"%s\",\n", cfg->otaHost);
+  Serial.printf("  \"otaPort\": %d,\n", cfg->otaPort);
+  Serial.printf("  \"otaUrlBase\": \"%s\",\n", cfg->otaUrlBase);
+  Serial.printf("  \"autoFirmwareUpdate\": %d,\n", cfg->autoFirmwareUpdate);
+  Serial.printf("  \"defaultDevice\": %d,\n", cfg->defaultDevice);
+  Serial.printf("  \"defaultActive\": %d,\n", cfg->defaultActive);
+  Serial.printf("  \"displayTimeout\": %d,\n", cfg->displayTimeout);
+  Serial.printf("  \"alertTime\": %d,\n", cfg->alertTime);
+  Serial.printf("  \"infoTime\": %d,\n", cfg->infoTime);
+  Serial.printf("  \"mqttUpdateTime\": %d,\n", cfg->mqttUpdateTime);
+  Serial.printf("  \"logLevelUart\": %d,\n", cfg->logLevelUart);
+  Serial.printf("  \"logLevelSyslog\": %d\n", cfg->logLevelSyslog);
+  Serial.println("}");
 }  
 
 void dumpConfig(void) { 

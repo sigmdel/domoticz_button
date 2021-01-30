@@ -12,6 +12,8 @@ to a home automation system based on [Domoticz](https://domoticz.com).
   &nbsp;&nbsp;&nbsp;[Encoder/push-button](#encoder)<br/>
   &nbsp;&nbsp;&nbsp;[Display Blanking](#blanking)<br/>
   &nbsp;&nbsp;&nbsp;[Alerts](#alerts)<br/>
+  &nbsp;&nbsp;&nbsp;[Default Device](#default_device)<br/>
+  &nbsp;&nbsp;&nbsp;[Managing](#managing)<br/>
   [Setup](#setup)<br/>
   &nbsp;&nbsp;&nbsp;[Zones](#zones)<br/>
   &nbsp;&nbsp;&nbsp;[Device Status](#status)<br/>
@@ -53,7 +55,7 @@ The following libraries (as copied from `platformio.ini`) are used
         https://github.com/sigmdel/mdRotaryEncoder.git
 
 
-Of course a different SSD1306 library could be used but `ESP8266 and ESP32 OLED driver for SSD1306 displays` (formerly named `ESP8266_SSD1306`) by Daniel Eichhorn with contributions by Fabrice Weinberg has very legible fonts with the complete Latin 1 code page which is quite useful for me. I rolled my own button and encoder libraries, but it should be quite easy to replace them if desired.
+Of course a different SSD1306 library could be used but `ESP8266 and ESP32 OLED driver for SSD1306 displays` (formerly named `ESP8266_SSD1306`) by Daniel Eichhorn with contributions by Fabrice Weinberg has very legible fonts with the complete Latin 1 code page which is quite useful for me. I rolled my own push-button and rotary encoder libraries, but it should be quite easy to replace them if desired.
 
 <div id="usage" />
 
@@ -92,6 +94,15 @@ Domoticz scenes do not have a status.
     |                 |
     +-----------------+
 
+In addition to displaying and modifying the state of Domoticz virtual devices, there is also a limited ability to manage
+the **Domoticz button**.
+
+    +-----------------+
+    |--Configuration--|
+    |     Download    |
+    |     options     |
+    +-----------------+
+
 
 <div id="encoder" />
 
@@ -120,10 +131,10 @@ Pressing the push-button twice exits the brightness editing mode directly withou
 Domoticz also has selector switches which select one value from a given number of possibilities. 
 These are edited in the same manner as dimmer brightness is: 
 
-  1. press the push button twice to enter the selector value editing mode,
+  1. press the push-button twice to enter the selector value editing mode,
   2. turn the rotary encoder to go to the next or the previous selector value,
-  3. press the push button once to select the displayed selector value and to exit the selector value editing mode,
-  4. press the push button twice to exit the selector value editing mode without changing the current selector value.
+  3. press the push-button once to select the displayed selector value and to exit the selector value editing mode,
+  4. press the push-button twice to exit the selector value editing mode without changing the current selector value.
 
 <div id="blanking" />
 
@@ -145,7 +156,7 @@ alert will no longer be shown once the automation kicks in, assuming nothing imp
 
 # Setup
 
-Unlike some web interfaces to Domoticz, the Domoticz Button will not obtain a list of devices from the home automation server. The content of `devices.h` and `devices.cpp` must be modified to point to the Domoticz virtual devices that are to be controlled by the button.
+Unlike some web interfaces to Domoticz, the **Domoticz button** will not obtain a list of devices from the home automation server. The content of `devices.h` and `devices.cpp` must be modified to point to the Domoticz virtual devices that are to be controlled by the button.
 
 <div id="zones" />
 
@@ -184,7 +195,7 @@ Second adjust the enumeration of device status messages that can occur in `devic
     }; 
 
 The first three are found in all systems. Since I have groups in Domoticz,
-the `DS_MIXED` status is included. It indicates that some devices in a group are on while others are off. The other four status correspond to the automatic garage door closer and the garage door state mentionned above. The last three are possible values of a selector switch that is used to select a scheduling calendar in Domoticz.
+the `DS_MIXED` status is included. It indicates that some devices in a group are on while others are off. The other four statuses correspond to the automatic garage door closer and the garage door state mentionned above. The last three are possible values of a selector switch that is used to select a scheduling calendar in Domoticz.
 
 The string representations of all these status is in the `devicestatus[]` array of strings. These are displayed on the third line of the OLED display.
 
@@ -246,9 +257,9 @@ Note that the first field is the selector switch index in the devices[] not the 
         {15, DS_NO, 2},      //Fermeture automatique du garage
         {24, DS_DEFAULT, 3}  //Calendrier
     };
-
+o
 For example, the scheduling calendar selector has three possible values:
-`DS_DEFAULT`, `DS_WEEKEND` and `DS_HOLIDAYS`, so its `status0` field is set to `DS_DEFAULT` and that way when editing that extra value, the application knowns what to display for the three possible selection values.
+`DS_DEFAULT`, `DS_WEEKEND` and `DS_HOLIDAYS`, so its `status0` field is set to `DS_DEFAULT` and that way when editing that extra value, the application knows what to display for the three possible selection values.
 
 <div id="groups" />
 
@@ -262,7 +273,7 @@ Unfortunately, Domoticz does not send an MQTT message to update the status of a 
         uint16_t members[5];  // list of devices index of members of the group
     } group_t;
 
-Again the first field is the group index in the `devices[]` not the Domoticz idx of the group. The second field is the number of member devices and finally there's a list of the indices of the member devices. Currently the limit on the number of device is set at 5. 
+Again the first field is the group index in the `devices[]` not the Domoticz idx of the group. The second field is the number of member devices and finally there's a list of the indices of the member devices. Currently the limit on the number of devices is set at 5. 
 
 <div id="alertsetup" />
 
@@ -276,6 +287,40 @@ Alerts are simply defined by an index in the `devices[]` array identifying the d
     } alert_t;
 
 For example, an alert is raised when automatic garage door closing is disabled. The virtual Domoticz device for this is a selector switch and the disable setting is the first selector level which is 0. So the `alert_t` structure for that alert is `{15,0}`.
+
+<div id="default_device" />
+
+## Default Device
+
+A default device can be defined in the configuration. The status of that device will be shown whenever the displayed is refreshed after being blanked because of inactivity. Without a defined default device, the device shown on the display when activating the display will remain the same that was shown just before the display was turned off.
+
+If the default device is set to be active, then the push-button can be used to toggle the state of the device whenever the display is turned off. In other words, when an active default device is defined, **Domoticz button** can be viewed as a remote button for that device when the display is blanked.
+
+The configuration parameters (see [config](#config) that set the default device number and whether its active or not are
+
+  - `defaultDevice`: an unsigned 16 bit integer that is the index of the device in the `devices[]` array. If there's to be no default device, set this to a value greater than the number of devices in the array, says the default 65535.
+
+  - `defaultActive`: an unsigned 8 bit integer that should be set to 1 to toggle the state of the default device with a button press when the display is blanked and set to 0 to only display the status of the default device when the display is refreshed after being blanked.
+
+
+<div id="managing" />
+
+## Managing
+
+Instead of remotely controlling Domoticz virtual devices, the **Domoticz button** can be put in what could be called management mode. Press and hold down the push-button for a full two seconds or more to enter that mode.  Then `-Configuration-` will be shown on the top line of the display while each possible action is shown in the following lines, one screen at a time. Here is a list of the possible menu choices.
+
+  - **Download firmware** -  Downloads and the binary firmware file on the over-the-air Web server. Contrary to automatic updates, no version check is performed.
+
+  - **Download options** - Updates the configuration stored in flash memory using a JSON formatted configuration file downloaded from the over-the-air Web server.
+ 
+  - **Use default options** - Clears the current configuration stored in flash memory and reload the default configuration defined in  `config.h`.
+
+  - **Show information** - Displays some connexion information shown at start up.
+
+  - **Restart** - Restarts the device.
+
+This menu works very much like a selector switch. Rotate the encoder to go to the next or previous choice. Click once to launch the currently shown action. Click twice to exit the management mode and to return to the device display mode.
+
 
 <div id="nls" />
 
@@ -295,7 +340,7 @@ During the boot process, the button will indicate that it has connected to the W
 
 Of course, that may not be possible to reconnect to the Wi-Fi network if the last used wireless network is no longer available or if the ESP has never been connected. In that case, the button will start an access point (its own wireless network) and a small web server. The name (SSID) of the network will be shown on the display as well as the IP address of the web server. Log into to that network, using a desktop computer, tablet or smart phone, open URL 192.168.4.1 in a web browser and enter the name of the local wireless network and its password. Once the button has logged into the desired network, it will shut down its own wireless access point.
 
-Once a button has connected to the local Wi-Fi network, it will always reconnect automatically to that network even if a new version of the firmware is loaded into the device or if a new version of the button configuration is loaded as explained below. Normally, that is the desired behaviour. But what if Domoticz is moved to a different wireless network and the original wireless network remains in use? Then the button will keep on logging into the original network. The solution is then to press the push button for two seconds or more. When the button is released, the Wi-Fi credentials will be erased and the button will be restarted. It will start an access point as explained above and it will then be possible to enter the new credentials as explained in the previous paragraph.
+Once a **Domoticz button** has connected to the local Wi-Fi network, it will always reconnect automatically to that network even if a new version of the firmware is loaded into the device or if a new version of the button configuration is loaded as explained below. Normally, that is the desired behaviour. But what if Domoticz is moved to a different wireless network and the original wireless network remains in use? Then the button will keep on logging into the original network. The solution is to select the **Clear Wi-Fi** action in the configuration [management](#managing) menu. When that action is activated, the Wi-Fi credentials will be erased and the button will be restarted. It will start an access point as explained above and it will then be possible to enter the new credentials as explained in the previous paragraph.
 
 If the button logs onto the correct Wi-Fi network but cannot connect to the MQTT broker, then there are two explanations. 
 
@@ -308,11 +353,11 @@ If the button logs onto the correct Wi-Fi network but cannot connect to the MQTT
 
 # OTA Firmware Updates
 
-Starting with version 0.1.2, firmware of a Domoticz button will be automatically updated if a new version is available when the device is rebooted. 
+Starting with version 0.1.2, firmware of a Domoticz button will be (optionally) updated if a new version is available when the device is rebooted. 
 The implementation is based on [Self-updating OTA firmware for ESP8266](https://www.bakke.online/index.php/2017/06/02/self-updating-ota-firmware-for-esp8266/)
 by Erik H. Bakke (OppoverBakke). 
 
-Firmware updates are done over-the-air using HTTP requests sent to a Web server which must obviously be reachable from the Domoticz button. Two files are needed: a text file containing the version number and a binary file containing the new firmware. The URLs for these two files is constructed as follows.
+Firmware updates are done over-the-air using HTTP requests sent to a Web server which must obviously be reachable from the **Domoticz button**. Two files are needed: a text file containing the version number and a binary file containing the new firmware. The URLs for these two files is constructed as follows.
 
   - Version number:<br/>
      'http://" + config.otaHost + ":" + config.otaPort + config.otaUrlBase + config.hostname + ".version"'<br/>
@@ -345,6 +390,10 @@ firmware currently running on the Domoticz button, then its firmware will be rep
 It is **important** to ensure that the integer contained in the `.version` file exactly matches the version of the accompanying `.bin` file. If the integer contained 
 in `.version` is bigger than `VERSION` coded in the `.bin` file, then the ESP will be caught in an infinite update loop.
 
+The `autoFirmwareUpdate` configuration flag must be set to 1 to enable automatic firmware updates at boot time. If set to 0 automatic updates will not be attempted. By default the flag is set to 0 (see the `OTA_AUTO_FIRMWARE_UPDATE` macro in `config.h`). This can be changed without flashing new firmware by updating the configuration.
+
+Manual over-the-air updates of the firmware can be done at any time from the [Managing](#managing) menu.
+
 Whenever the firmware is updated, the configuration saved in the ESP8266 flash memory will be erased and then the device will be restarted. That means that the default 
 configuration as defined in `config.h` will be used after a firmware update. Since the Wi-Fi credentials are not included in the configuration file, the button should reconnect to 
 the Wi-Fi network.
@@ -354,40 +403,38 @@ the Wi-Fi network.
 
 # Config.h
 
-A number of parameters can be set in the `config.h` header file. Currently, these
-are 
-1. The IP address of the MQTT host and the MQTT port. 
-2. The IP address of the syslog host and the syslog port.
-3. The IP address of the OTA server and its http port.
-4. The logging level for the UART log sent to the ESP Serial port and the system log sent to the syslog host. 
-5. A number of time intervals.
+A number of parameters can be set in the `config.h` header file. These options are loosely grouped as follows:
+1. MQTT parameters
+2. Syslog parameters
+3. OTA Web sever parameters
+4. Default device parameters
+5. Timing parameters
+5. Logging levels
 
-**While fields for the MQTT user and password are in place, secure connections for MQTT messages is not yet implemented.** 
-
-Pressing the push button four times or more in quick succession make the button load a new configuration file from the 
-over-the-air update host. A configuration file is a simple JSON file. Here is such a file with the default 
-configuration values.
+Manual over-the-air changes to the configuration parameters can be done at any time from the [Managing](#managing) menu. This is done by requesting a JSON formatted configuration file from the over-the-air Web server. Here is the configuration file with the default configuration values as of version 0.2.0 (512) of the firmware.
 
     pi@rasberrypi:/var/www/html/domoticz_button $ cat DomoButton-1.config.json
     {
-        "hostname": "DomoButton-1",
-        "mqttHost": "192.168.1.11",
-        "mqttPort": 1883,
-        "mqttUser" : "",
-        "mqttPswd" : "",
-        "mqttBufferSize" : 768,
-        "syslogHost" : "192.168.1.11",
-        "syslogPort" : 514,
-        "otaHost" : "192.168.1.11",
-        "otaPort" : 80,
-        "otaUrlBase" : "/domoticz_button/",
-        "displayTimeout" : 15,
-        "alertTime" : 3,
-        "infoTime" : 3,
-        "restartMsgTime" : 2,
-        "mqttUpdateTime" : 5,
-        "logLevelUart" : "DEBUG",
-        "logLevelSyslog" : "ERR"
+    "hostname": "DomoButton-1",
+    "mqttHost": "192.168.1.11",
+    "mqttPort": 1883,
+    "mqttUser" : "",
+    "mqttPswd" : "",
+    "mqttBufferSize" : 768,
+    "syslogHost" : "192.168.1.11",
+    "syslogPort" : 514,
+    "otaHost" : "192.168.1.11",
+    "otaPort" : 80,
+    "otaUrlBase" : "/domoticz_button/",
+    "autoFirmwareUpdate" : 0,
+    "defaultDevice" : 65535,
+    "defaultActive" : 0,
+    "displayTimeout" : 15,
+    "alertTime" : 3,
+    "infoTime" : 3,
+    "mqttUpdateTime" : 5,
+    "logLevelUart" : "DEBUG",
+    "logLevelSyslog" : "ERR"
     }
 
 It is not necessary to include all configuration fields in the file. If only the IP address of the MQTT broker needs to
@@ -401,6 +448,7 @@ When changes to the configuration are done in this fashion, they are saved in th
 
 Be aware that the complete configuration file is processed by the JSON parser at once. So any formatting error in the configuration file will result in no changes being made to the configuration even if the error is only an extra comma in the last key-value pair or after the last } bracket. There are many JSON validators on the Web that can be used to verify the file.
 
+**While fields for the MQTT user and password are in place, secure connections for MQTT messages is not yet implemented.** 
 
 <div id="licence" />
 

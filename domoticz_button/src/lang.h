@@ -27,8 +27,8 @@
 
 // **** Include one and only one NLS file **** 
 
-//#include "lang_en.h"    // English
-#include "lang_fr.h"      // French
+#include "lang_en.h"    // English
+//#include "lang_fr.h"      // French
 //#include "lang_xxxx.h"  // 
 
 #endif

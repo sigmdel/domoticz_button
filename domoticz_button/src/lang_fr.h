@@ -11,6 +11,21 @@
 #define SC_BM_DEVICE_SELECTOR "%s"
 #define SC_BM_DEVICE_OTHER "%s"
 
+// function displayConfiguration()
+#define SC_CO_CONFIGURATION "--Configuration--"
+#define SC_CO_FIRMWARE_UPDATE1 "Télécharger"
+#define SC_CO_FIRMWARE_UPDATE2 "micrologiciel"
+#define SC_CO_CONFIG_UPDATE1 "Télécharger"
+#define SC_CO_CONFIG_UPDATE2 "paramètres"
+#define SC_CO_DEFAULT_CONFIG1 "Paramètres"
+#define SC_CO_DEFAULT_CONFIG2 "par défaut"
+#define SC_CO_CLEAR_WIFI1 "Nouveau"
+#define SC_CO_CLEAR_WIFI2 "Wi-Fi"
+#define SC_CO_SHOW_INFO1 "Montrer"
+#define SC_CO_SHOW_INFO2 "information"
+#define SC_CO_RESTART1 "Redémarrer"
+#define SC_CO_RESTART2 ""
+
 // function doRestart()
 #define SC_RESTARTING "Redémarrage..." 
 
@@ -30,7 +45,7 @@
 #define SC_FIRMWARE_VERSION "version"
 
 #define SC_WIFI_CONNECTED0 "Connecté"
-#define SC_WIFI_CONNECTED1 "%IP%"
+// SC_WIFI_CONNECTED1 STAT_IP
 #define SC_WIFI_CONNECTED2 "Micrologiciel ?"
 
 #define SC_FIRMWARE_LOADED0 "Nouveau"
@@ -38,7 +53,7 @@
 #define SC_FIRMWARE_LOADED2 "téléchargé"  
 
 #define SC_FIRMWARE_FAIL0 "Échec en"
-#define SC_FIRMWARE_FAIL1 "chargenant le"
+#define SC_FIRMWARE_FAIL1 "chargeant le"
 #define SC_FIRMWARE_FAIL2 "micrologiciel"
 
 

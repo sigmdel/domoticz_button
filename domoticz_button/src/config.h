@@ -8,7 +8,7 @@
 //#define DEBUG_CONFIG
 
 #define APP_NAME   "Domoticz button"
-#define VERSION    0x000103 // *** Make sure that the integer contained in the *.version file ***
+#define VERSION    0x000200 // *** Make sure that the integer contained in the *.version file ***
                             // *** served by the OTA Web server matches this VERSION number. ***
 
 // *** Hostname ***
@@ -44,7 +44,12 @@
 #define OTA_HOST "192.168.1.11"
 #define OTA_PORT 80
 #define OTA_URL_BASE  "/domoticz_button/"  // include trailing separator
+#define OTA_AUTO_FIRMWARE_UPDATE  0 // false, 1 true
 
+// *** Default device
+
+#define DEFAULT_DEVICE  65535 // for none usee some big number < 65536 that is greater than number of devices
+#define DEFAULT_ACTIVE      0 // false; 1 true
 
 // *** Time delays (in seconds) ***
 
@@ -78,24 +83,27 @@
 #define CONFIG_MAGIC    0x4D44    // 'M'+'D'
 
 struct config_t {
-  uint16_t magic;                 // check for valid config 
+  uint16_t magic;                 // check for valid config in EEPROM
   char hostname[HOST_NAME_SZ];    // used for Wi-Fi connection and MQTT broker connection
   char mqttHost[URL_SZ];          // URL of MQTT server 
   uint16_t mqttPort;              // MQTT port
   char mqttUser[SSID_SZ];         // *** NOT YET IMPLEMENTED ***
   char mqttPswd[PSWD_SZ];         // *** NOT YET IMPLEMENTED ***
-  uint16_t mqttBufferSize;     
+  uint16_t mqttBufferSize;        // In case Domoticz moves to longer MQTT messages
   char syslogHost[URL_SZ];        // URL of Syslog server
   uint16_t syslogPort;            // Syslog port
-  char otaHost[URL_SZ];
-  uint16_t otaPort;
-  char otaUrlBase[HOST_NAME_SZ];
-  uint32_t displayTimeout;
-  uint32_t alertTime; 
-  uint32_t infoTime;
-  uint32_t mqttUpdateTime;
-  uint8_t logLevelUart;
-  uint8_t logLevelSyslog;  
+  char otaHost[URL_SZ];           // URL of HTTP server with the firmware and configuration files
+  uint16_t otaPort;               // HTTP port for HTTP server
+  char otaUrlBase[HOST_NAME_SZ];  // HTTP directory containing the firware and configuratino files
+  uint8_t autoFirmwareUpdate;     // Check for new firmware version at startup
+  uint16_t defaultDevice;         // Device to display when display reactivated
+  uint8_t defaultActive;          // Toggle active device with button when display blanked 
+  uint32_t displayTimeout;        // Inactivity delay before blanking the display (seconds)
+  uint32_t alertTime;             // On and Off times when flashing an alert (seconds)
+  uint32_t infoTime;              // Time to display information screens on restart 
+  uint32_t mqttUpdateTime;        // Delay after requesting device status from Domoticz on startup
+  uint8_t logLevelUart;           // Level of log messages shown on the serial port
+  uint8_t logLevelSyslog;         // Level of log messages sent to the syslog sever
   uint32_t checksum;              // Used to validate saved configuration
 };
 
@@ -116,6 +124,7 @@ void clearEEPROM(void);  // default config will be used on next boot
   void clearConfig(config_t* cfg);
   void saveConfigToEEPROM(void);
 
+  void dumpConfigJson(config_t * cfg, char * msg);
   void dumpConfig(config_t* cfg, char* msg = NULL);
   void dumpConfig(void);
   void dumpEEPROMConfig(void);

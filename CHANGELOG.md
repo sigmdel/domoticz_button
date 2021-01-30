@@ -4,8 +4,16 @@
 
 ## Released
 
+### 0.2.0 (512)
+  
+  - Added configuration menu for manual OTA firmware updating, downloading of configuration or using of default configuration, etc.
+  - Added a default device which is toggled off/on with the push button when the screen is blanked
+  - More refactoring of `main.cpp`
+  - Experimental "ballistic" rotation handler for the rotary encoder
+  - Updated README.md
+  
 
-### 0.1.3 (259)
+### 0.1.3 (259) e117acb
 
   - Added over-the-air updating of configuration parameters in `config.cpp`
   - Updated README.md to explain how to update configuration parameters
@@ -14,7 +22,7 @@
   - Cleaned up library dependencies in `platformio.ini`
 
 
-### 0.1.2 (258)
+### 0.1.2 (258) 55998b
 
   - Updated displayed messages at startup and improved translations 
   - Added a new section to README.md on OTA firware updates

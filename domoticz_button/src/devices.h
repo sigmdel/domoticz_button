@@ -65,6 +65,10 @@ extern const uint16_t deviceCount;
 // so there can be an On/Off switch with idx 6 and a scene with idx 6.
 int findDevice(devtype_t type, uint32_t idx);
 
+#ifdef BALLISTIC_ROTATION
+extern int nextZone(int cdev);
+extern int prevZone(int cdev);
+#endif
 
 // Selectors can have many choices 
 //

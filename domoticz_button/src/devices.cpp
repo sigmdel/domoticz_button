@@ -91,6 +91,42 @@ int findDevice(devtype_t type, uint32_t idx) {
   return -1;
 }
 
+#ifdef BALLISTIC_ROTATION
+int nextZone(int cdev) {
+  zone_t currentZone = devices[cdev].zone;
+  while (devices[cdev].zone == currentZone) {
+    cdev++;
+    if (cdev >= deviceCount)
+      return 0;
+  }
+  return cdev;
+}     
+
+int prevZone(int cdev) {
+  zone_t currentZone = devices[cdev].zone;
+  while (devices[cdev].zone == currentZone) {
+    cdev--;
+    if (cdev < 0)
+      return deviceCount-1;
+  }
+  return cdev;
+}     
+#endif
+
+ /*
+// dump devices to serial
+void dumpDevices(void) {
+  for (int i=0; i<deviceCount; i++) {
+      Serial.println();
+      Serial.printf("Zone: %s (%d)\n", zones[devices[i].zone], devices[i].zone);
+      Serial.printf("Name: %s\n", devices[i].name);
+      Serial.printf("Type: %s (%d)\n", devicetypes[devices[i].type], devices[i].type);
+      Serial.printf("idx: %d\n", devices[i].idx); 
+      Serial.printf("Status: %s (%d\n", (devicesstatus[devices[i].status], evices[i].status);
+  } 
+}  
+*/ 
+
 // Selectors. Currently there are two selectors in the table
 selector_t selectors[] {
   {15, DS_NO, 2},      //Fermeture automatique du garage
