@@ -4,7 +4,13 @@
 
 ## Released
 
-### 0.2.0 (512)
+### 0.2.1 (513)
+
+  - Added sound alarm for flashing alerts. Implemented with an active buzzer and transistor
+  - Updated README.md
+  - Removed firmware name error used to test errors in loading firmware
+
+### 0.2.0 (512) ce1c5b0
   
   - Added configuration menu for manual OTA firmware updating, downloading of configuration or using of default configuration, etc.
   - Added a default device which is toggled off/on with the push button when the screen is blanked

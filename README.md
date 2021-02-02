@@ -1,11 +1,13 @@
 # Domoticz Button
 
-A [PlatformIO](https://platformio.org) project built on an ESP8266 development module (such as a D1 Mini or NodeMCU), 
-an SSD1306 128x64 OLED display, and a KY040 rotary encoder with push-button switch that provides a physical interface 
+A [PlatformIO](https://platformio.org) project built on an ESP8266 development board connected to a small display, 
+a rotary encoder with push-button and an optional buzzer to provide a physical interface 
 to a home automation system based on [Domoticz](https://domoticz.com). 
+
 
 # Table of Contents
   [Inspiration](#inspiration)<br/>
+  [Hardware](#hardware)<br/>
   [Requirements](#requirements])<br/>
   [Usage](#usage)<br/>
   &nbsp;&nbsp;&nbsp;[Display](#display)<br/>
@@ -24,7 +26,7 @@ to a home automation system based on [Domoticz](https://domoticz.com).
   [Language Support](#nls)<br/>
   [Initial Wireless Connections](#wifi)<br/>
   [OTA Firmware Updates](#ota)<br/>
-  [Config](#config)<br/>
+  [Configuration](#config)<br/>
   [Licence](#licence)
 
 
@@ -36,6 +38,27 @@ to a home automation system based on [Domoticz](https://domoticz.com).
 which uses the same hardware to control [Tasmota](https://github.com/arendst/Tasmota) switches directly. It is a great project and it
 works as is. But my home automation system has some devices that are not based on Tasmota which I also wanted to control.
 Furthermore, there are scenes and groups defined in Domoticz which are quite useful.
+
+<div id="hardware" />
+
+# Hardware
+
+  1. An ESP8266 development board such as a D1 Mini or NodeMCU. Would probably work with an ESP32 base board, but the ESP8266 is up 
+  to the task without problems.
+
+  2. An SSD1306 128x64 OLED display. Perhaps a smaller or a bigger screen could be used, but 
+  The messages shown on the display have been carefully crafted for a 3 line by approximately 14 character display, so 
+  using a smaller or bigger screen would require carefull rewritting of the messages and adjustment of the display font.
+
+  3. A rotary encoder and a push-button switch. These could be separate, but a KY040 rotary encoder with integrated push-button switch
+  was used.
+
+  4. An optional active buzzer for sound alarms if desired. Depending on the buzzer, it is probably best to use a 2N3906 PNP transistor 
+  to supply current to the buzzer.
+
+![schematic](domotciz_button/doc/schematic.png) 
+
+
 
 <div id="requirements" />
 
@@ -56,6 +79,9 @@ The following libraries (as copied from `platformio.ini`) are used
 
 
 Of course a different SSD1306 library could be used but `ESP8266 and ESP32 OLED driver for SSD1306 displays` (formerly named `ESP8266_SSD1306`) by Daniel Eichhorn with contributions by Fabrice Weinberg has very legible fonts with the complete Latin 1 code page which is quite useful for me. I rolled my own push-button and rotary encoder libraries, but it should be quite easy to replace them if desired.
+
+Finally, the font used is **Roboto 14** created with the *Font Converter* by Daniel Eichhorn available at https://oleddisplay.squix.ch/.
+
 
 <div id="usage" />
 
@@ -147,10 +173,15 @@ step restores the display. That initial wake up button press or encoder step is 
 
 ## Alerts
 
-When the display is blanked, alerts can be flashed (3 seconds on / 3 seconds off). In this example there are two
-alerts associated with the garage door. The first shows when the garage door is open. The second shows when
+When the display is blanked, alerts can be flashed (3 seconds on / 3 seconds off by default). In the example 'device.cpp'
+file there are two alerts associated with the garage door. The first shows when the garage door is open. The second shows when
 automatic garage door closing has been disabled. Of course if automatic garage door closing is activated, then the first
 alert will no longer be shown once the automation kicks in, assuming nothing impeded the progress of the door.
+
+In addition, if the buzzer is installed, it will be activated when the alert is displayed. The sound alarm can be enabled or
+disabled for each alert independently. Pressing the push-button quickly twice while the buzzer is active will disable the
+sound alarm for 60 minutes. This delay is a parameter that can be modified; see [Configuration](#config).
+
 
 <div id="setup" />
 
@@ -195,7 +226,7 @@ Second adjust the enumeration of device status messages that can occur in `devic
     }; 
 
 The first three are found in all systems. Since I have groups in Domoticz,
-the `DS_MIXED` status is included. It indicates that some devices in a group are on while others are off. The other four statuses correspond to the automatic garage door closer and the garage door state mentionned above. The last three are possible values of a selector switch that is used to select a scheduling calendar in Domoticz.
+the `DS_MIXED` status is included. It indicates that some devices in a group are on while others are off. The other four statuses correspond to the automatic garage door closer and the garage door state mentioned above. The last three are possible values of a selector switch that is used to select a scheduling calendar in Domoticz.
 
 The string representations of all these status is in the `devicestatus[]` array of strings. These are displayed on the third line of the OLED display.
 
@@ -245,7 +276,7 @@ alerts once the basics are working.
 The extra information needed for each selector switch is defined in the `selectors[]` array in `devices.cpp. The selector_t structure must be filled for each selector.
 
     typedef struct {
-        uint16_t index;        // index of the selecton in devices[]
+        uint16_t index;        // index of the selection in devices[]
         devstatus_t status0;   // the first possible choice (value 0) 
         uint8_t statusCount;   // the number of choices so the last value is (statusCount-1)*10
     } selector_t;
@@ -269,7 +300,7 @@ Unfortunately, Domoticz does not send an MQTT message to update the status of a 
 
     typedef struct {
         uint16_t index;       // device index of group 
-        uint16_t count;       // number of members in the gourp (max 5)
+        uint16_t count;       // number of members in the group (max 5)
         uint16_t members[5];  // list of devices index of members of the group
     } group_t;
 
@@ -282,11 +313,12 @@ Again the first field is the group index in the `devices[]` not the Domoticz idx
 Alerts are simply defined by an index in the `devices[]` array identifying the device that can raise an alert and a condition which is nothing else than its status.
 
     typedef struct {
-        const uint16_t index;    // index of device in devices
-        const uint8_t condition; // status value that warrants an alert
+        uint16_t index;    // index of device in devices
+        uint8_t condition; // status value that warrants an alert
+        uint8_t sound;     // 0 silent alert, 1 buzzer sounds when alert shown   
     } alert_t;
 
-For example, an alert is raised when automatic garage door closing is disabled. The virtual Domoticz device for this is a selector switch and the disable setting is the first selector level which is 0. So the `alert_t` structure for that alert is `{15,0}`.
+For example, an alert is raised when automatic garage door closing is disabled. The virtual Domoticz device for this is a selector switch and the disable setting is the first selector level which is 0. So the `alert_t` structure for that alert is `{15,0,0}`. The last field is set to `0` which means the buzzer is not to be activated when the alert is flashed on the display. If that `0` were to be replaced with a `1` then the buzzer would be actvated each time the alert is shown on the display.
 
 <div id="default_device" />
 
@@ -294,7 +326,7 @@ For example, an alert is raised when automatic garage door closing is disabled. 
 
 A default device can be defined in the configuration. The status of that device will be shown whenever the displayed is refreshed after being blanked because of inactivity. Without a defined default device, the device shown on the display when activating the display will remain the same that was shown just before the display was turned off.
 
-If the default device is set to be active, then the push-button can be used to toggle the state of the device whenever the display is turned off. In other words, when an active default device is defined, **Domoticz button** can be viewed as a remote button for that device when the display is blanked.
+If the default device is set to be active, then the push-button can be used to toggle the state of the device whenever the display is turned off. In other words, when an active default device is defined, the **Domoticz button** can be viewed as a remote button for that device when the display is blanked.
 
 The configuration parameters (see [config](#config) that set the default device number and whether its active or not are
 
@@ -315,7 +347,7 @@ Instead of remotely controlling Domoticz virtual devices, the **Domoticz button*
  
   - **Use default options** - Clears the current configuration stored in flash memory and reload the default configuration defined in  `config.h`.
 
-  - **Show information** - Displays some connexion information shown at start up.
+  - **Show information** - Displays some connection information shown at start up.
 
   - **Restart** - Restarts the device.
 
@@ -401,7 +433,7 @@ the Wi-Fi network.
 
 <div id="config" />
 
-# Config.h
+# Configuration
 
 A number of parameters can be set in the `config.h` header file. These options are loosely grouped as follows:
 1. MQTT parameters
@@ -433,9 +465,13 @@ Manual over-the-air changes to the configuration parameters can be done at any t
     "alertTime" : 3,
     "infoTime" : 3,
     "mqttUpdateTime" : 5,
+    "suspendBuzzerTime" : 60,
     "logLevelUart" : "DEBUG",
     "logLevelSyslog" : "ERR"
     }
+
+All times are in seconds except for the last one, `suspendBuzzerTime` which is the number of minutes during which the buzzer is suspended. As said
+before, the push-button must be pressed twice while the buzzer is sounding to disable the latter for the specified number of minutes.
 
 It is not necessary to include all configuration fields in the file. If only the IP address of the MQTT broker needs to
 be changed to 192.168.1.222, then the following will work.

@@ -8,18 +8,6 @@
   
    MQTT has to be enabled in Domoticz. See the MQTT wiki page 
    @ https://www.domoticz.com/wiki/MQTT
-
-   TODO - 2020-12-20
-
-    FIX 
-      DT_CONTACT, DT_SELECTOR 
-        - should be last in device types to avoid test in sending command
-          and better handle toggling device
-
-    ADD ?
-      temps/humidity not shown
-      garbage not shown
-      tides not shown
 */                                                                
 
 #include <Arduino.h>            // framework for platformIO
@@ -89,6 +77,10 @@ enum configOptions_t {
 };
 #define configOptionsCount 6
 
+/****************************/
+/* * * Global variables * * */
+/****************************/
+
 bool displayNeedsUpdating = true;  // set to true to have the display updated in next loop cycle
 bool displayVisible = true;        // is the display currently visible
 unsigned long timeLastActive;      // used to decide when to turn the display off
@@ -96,6 +88,51 @@ int cdev = 0;                      // index of current device devices array
 int8_t dimLevel = 0;               // temporary dim level 0-10 when editing dimmer
 int8_t selChoice = 0;              // temporary selection choice when editing selector
 int8_t configChoice = 0;           // temporary choice in the configuration mode
+unsigned long alertAllowed = 0;    // number of miliseconds before alerts can resume
+
+
+/******************/
+/* * * Buzzer * * */
+/******************/
+
+// *** Sound alers (buzzer)
+
+#define BUZZER_PIN      D0 // GPIO set to 255 if buzzer not connected to I/O pin
+#define BUZZER_ON      LOW // i.e. 0
+
+unsigned long minutetime = 0;
+
+bool buzzing = false;
+
+void minuteTimer(void) {
+  if (millis() - minutetime >= 60000)  {
+    minutetime = millis();
+    if (alertAllowed > 0)
+      alertAllowed--;      
+  }
+}  
+
+void initBuzzer(void) {
+ if (BUZZER_PIN < 255) {
+    sendToLogPf(LOG_DEBUG, PSTR("Initializing buzzer on gpio %d, active %d"), BUZZER_PIN, BUZZER_ON);
+    pinMode(BUZZER_PIN, OUTPUT);
+    digitalWrite(BUZZER_PIN, 1-BUZZER_ON); // turn it off right away
+  }
+}
+
+void enableBuzzer(bool setOn) {
+  if (BUZZER_PIN < 255) {
+    if (alertAllowed > 0) setOn = false;
+    buzzing = setOn;
+    digitalWrite(BUZZER_PIN, (setOn) ? BUZZER_ON : 1 - BUZZER_ON);
+    sendToLogPf(LOG_DEBUG, PSTR("Buzzer set %s"), (setOn) ? "on" : "off");
+  }  
+}
+
+void suspendBuzzer() {
+  alertAllowed = config.suspendBuzzerTime;
+  enableBuzzer(false);
+}
 
 /************************/
 /* * * OLED display * * */
@@ -110,7 +147,7 @@ int8_t configChoice = 0;           // temporary choice in the configuration mode
 
 SSD1306Wire display(0x3c, SDA, SCL, GEOMETRY_128_64);
 
-void Show(char* top, char* middle, char* bottom, uint16_t waitTime = 0, bool alert = false) {
+void Show(char* top, char* middle, char* bottom, uint16_t waitTime = 0, bool alert = false, bool sound = false) {
   display.displayOn();
   display.clear();
   display.drawString(64, TOP_ROW, top);
@@ -120,13 +157,16 @@ void Show(char* top, char* middle, char* bottom, uint16_t waitTime = 0, bool ale
      display.setColor(BLACK);
   }  
   display.drawString(64, BOTTOM_ROW, bottom);
-  if (alert)
+  if (alert) {
     display.setColor(WHITE);
+    if (sound)
+      enableBuzzer(true);
+  }  
   display.display();
   delay(waitTime);
 }
 
-void displayDevice(uint16_t index, bool alert=false) {
+void displayDevice(uint16_t index, bool alert=false, bool sound=false) {
   // build bottom row
   char llbuf[32];  
   if (buttonMode == BM_DIM_LEVEL) {
@@ -144,7 +184,7 @@ void displayDevice(uint16_t index, bool alert=false) {
       sprintf(llbuf, SC_BM_DEVICE_OTHER, devicestatus[devices[index].status]);  
     }  
   } 
-  Show( (char*) zones[devices[index].zone], (char *) devices[index].name, llbuf, 0, alert);
+  Show( (char*) zones[devices[index].zone], (char *) devices[index].name, llbuf, 0, alert, sound);
   sendToLogPf(LOG_DEBUG, PSTR("Updated display for device %s.%s, alert %s, edit mode %s"), 
     zones[devices[index].zone], devices[index].name, (alert) ? "yes" : "no", (buttonMode == BM_STATUS) ? "BM_DEVICES" : "BM_DIMMER");
 }
@@ -448,7 +488,7 @@ void doUpdateAlertDisplay(void) {
   if (nextAlert() < 0) {
     alertVisible = false;    
   }  else {
-    displayDevice(alerts[currentAlert].index, true);
+    displayDevice(alerts[currentAlert].index, true, alerts[currentAlert].sound);
     alertVisible = true;
   }
 }
@@ -506,6 +546,7 @@ void setButtonMode(buttonMode_t mode) {
         alertTime = millis();
         alertVisible = false;
         display.displayOff();
+        enableBuzzer(false);
         break;
       case BM_CONFIGURATION:
         configChoice = 0;
@@ -549,6 +590,8 @@ void OnButtonClicked(int n) {
   if (buttonMode == BM_BLANKED) {
     if (n == 1 && config.defaultActive && config.defaultDevice < deviceCount) 
       toggleDevice(config.defaultDevice);
+    else if (n == 2 && buzzing) 
+      suspendBuzzer();  
     setButtonMode(BM_STATUS); 
     return;  
   }
@@ -700,7 +743,10 @@ void setup() {
   // intialize rotary encoder and push button
   rotary.onButtonRotated(ButtonRotated);
   pushButton.OnButtonClicked(OnButtonClicked);
-  
+
+  // intialize sound alert (buzzer)
+  initBuzzer();
+ 
   sendToLogP(LOG_DEBUG, PSTR("Starting Wifi radio"));
   setup_wifi();
   Show( (char*) SC_WIFI_CONNECTED0,  (char*) WiFi.localIP().toString().c_str(),  (char*) SC_WIFI_CONNECTED2, config.infoTime);
@@ -763,6 +809,7 @@ void loop(void) {
 #endif
   rotary.process();
   pushButton.status();
+  minuteTimer();
 
   if (millis() - updateGroupsTime > 10*1000) {
     updateGroupStatus();
@@ -780,6 +827,7 @@ void loop(void) {
     if (alertVisible) { // turn off a visible alert
       alertVisible = false;
       display.displayOff();
+      enableBuzzer(false);
       sendToLogP(LOG_DEBUG, PSTR("turning alert off"));
     } else {  // no alert shown, show one if possible)
       doUpdateAlertDisplay();

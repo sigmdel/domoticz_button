@@ -8,8 +8,9 @@
 //#define DEBUG_CONFIG
 
 #define APP_NAME   "Domoticz button"
-#define VERSION    0x000200 // *** Make sure that the integer contained in the *.version file ***
-                            // *** served by the OTA Web server matches this VERSION number. ***
+#define VERSION    0x000201 // 513
+// *** Make sure that the decimal integer contained in the *.version ***
+// *** file served by the OTA Web server matches this VERSION number. ***
 
 // *** Hostname ***
 // 
@@ -53,10 +54,11 @@
 
 // *** Time delays (in seconds) ***
 
-#define DISPLAY_TIMEOUT    15  // period of inactivity before blanking display
-#define ALERT_TIME          3  // alert on/off time
-#define MQTT_UPDATE_TIME    5  // initial updating time after MQTT subscribe in mqttReconnect()
-#define INFO_TIME           3  // minimum time displaying statup info messages 
+#define DISPLAY_TIMEOUT      15  // period of inactivity before blanking display (seconds)
+#define ALERT_TIME            3  // alert on/off time (seconds)
+#define MQTT_UPDATE_TIME      5  // initial updating time after MQTT subscribe in mqttReconnect() (seconds)
+#define INFO_TIME             3  // minimum time displaying statup info messages (seconds)
+#define SUSPEND_BUZZER_TIME  60  // suspension time when sound alert suspended (minutes)
 
 // *** Log levels ***
 
@@ -102,6 +104,7 @@ struct config_t {
   uint32_t alertTime;             // On and Off times when flashing an alert (seconds)
   uint32_t infoTime;              // Time to display information screens on restart 
   uint32_t mqttUpdateTime;        // Delay after requesting device status from Domoticz on startup
+  uint32_t suspendBuzzerTime;     // Time of sound alert suspensions
   uint8_t logLevelUart;           // Level of log messages shown on the serial port
   uint8_t logLevelSyslog;         // Level of log messages sent to the syslog sever
   uint32_t checksum;              // Used to validate saved configuration

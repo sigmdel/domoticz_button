@@ -66,8 +66,9 @@ void useDefaultConfig(void) {
   
   config.displayTimeout = DISPLAY_TIMEOUT*1000;
   config.alertTime = ALERT_TIME*1000;
-  config.mqttUpdateTime = MQTT_UPDATE_TIME*1000;
   config.infoTime = INFO_TIME*1000;
+  config.mqttUpdateTime = MQTT_UPDATE_TIME*1000;
+  config.suspendBuzzerTime = SUSPEND_BUZZER_TIME;
 
   config.logLevelUart = LOG_LEVEL_UART;
   config.logLevelSyslog = LOG_LEVEL_SYSLOG;
@@ -251,6 +252,7 @@ bool updateConfig(void) {
   if (obtainJsonInt(doc, (char*) "alertTime", &numb)) config.alertTime = numb*1000;
   if (obtainJsonInt(doc, (char*) "infoTime", &numb)) config.infoTime = numb*1000;
   if (obtainJsonInt(doc, (char*) "mqttUpdateTime", &numb)) config.mqttUpdateTime = numb*1000;
+  if (obtainJsonInt(doc, (char*) "suspendBuzzerTime", &numb)) config.suspendBuzzerTime = numb;
 
   if (obtainJsonLevel(doc, (char*) "logLevelUart", (uint8_t*) &numb)) config.logLevelUart = numb;
   if (obtainJsonLevel(doc, (char*) "logLevelSyslog", (uint8_t*) &numb)) config.logLevelSyslog = numb;    

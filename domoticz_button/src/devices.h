@@ -73,7 +73,7 @@ extern int prevZone(int cdev);
 // Selectors can have many choices 
 //
 typedef struct {
-  uint16_t index;        // index of the selecton in devices[]
+  uint16_t index;        // index of the selection in devices[]
   devstatus_t status0;   // the first possible choice (value 0) 
   uint8_t statusCount;   // the number of choices so the last value is (statusCount-1)*10
 } selector_t;
@@ -95,7 +95,7 @@ int findSelector(int index);
 
 typedef struct {
   uint16_t index;       // device index of group 
-  uint16_t count;       // number of members in the gourp (max 5)
+  uint16_t count;       // number of members in the group (max 5)
   uint16_t members[5];  // list of devices index of members of the group
 } group_t;
 
@@ -107,8 +107,9 @@ extern const uint16_t groupCount;
 //
 
 typedef struct {
-  const uint16_t index;    // index of device in devices
-  const uint8_t condition; // status value that warrants an alert
+  uint16_t index;    // index of device in devices
+  uint8_t condition; // status value that warrants an alert
+  uint8_t sound;     // 0 silent alert, 1 buzzer sounds when alert shown   
 } alert_t;
 
 

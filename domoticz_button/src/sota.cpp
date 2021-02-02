@@ -32,7 +32,7 @@ bool otaUpdate(void) {
   #else
   String mac = config.hostname;
   #endif
-  String url = String(config.otaUrlBase) + mac + ".binx"; // make sure it does not work
+  String url = String(config.otaUrlBase) + mac + ".bin"; 
   t_httpUpdate_return ret = ESPhttpUpdate.update(wifiClient, config.otaHost, config.otaPort, url);
   switch (ret) {
     case HTTP_UPDATE_FAILED:
