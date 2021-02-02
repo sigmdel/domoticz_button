@@ -56,7 +56,7 @@ Furthermore, there are scenes and groups defined in Domoticz which are quite use
   4. An optional active buzzer for sound alarms if desired. Depending on the buzzer, it is probably best to use a 2N3906 PNP transistor 
   to supply current to the buzzer.
 
-![schematic](domotciz_button/doc/schematic.png) 
+See [schematic](https://github.com/sigmdel/domoticz_button/blob/main/domoticz_button/doc/schematic.png).
 
 
 
