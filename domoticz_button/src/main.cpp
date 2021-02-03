@@ -441,7 +441,15 @@ void mqttSubscribe(void) {
 
 void mqttReconnect(void) {
   sendToLogP(LOG_DEBUG, PSTR("Reconnecting to MQTT broker"));  
-  if (mqtt_client.connect(config.hostname)) {
+  bool connected = false;
+  if (!strlen(config.mqttUser) || !strlen(config.mqttPswd)) {
+    //dbg: sendToLogP(LOG_DEBUG, PSTR("Attempt to connect, no auth"));
+    connected = mqtt_client.connect(config.hostname);
+  } else {
+    //dbg: sendToLogPf(LOG_DEBUG, PSTR("Attempt to connect, user \"%s\", pswd \"%s\""), config.mqttUser, config.mqttPswd);
+    connected = mqtt_client.connect(config.hostname, config.mqttUser, config.mqttPswd);  
+  }
+  if (connected) { 
     sendToLogPf(LOG_INFO, PSTR("Reconnected to MQTT broker %s as %s"), config.mqttHost, config.hostname);
     mqttSubscribe();
     Show( (char*) SC_MQTT_CONNECTED0, (char*) SC_MQTT_CONNECTED1, (char*) SC_MQTT_CONNECTED2, config.mqttUpdateTime);

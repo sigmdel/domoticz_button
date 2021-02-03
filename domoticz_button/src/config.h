@@ -8,7 +8,7 @@
 //#define DEBUG_CONFIG
 
 #define APP_NAME   "Domoticz button"
-#define VERSION    0x000201 // 513
+#define VERSION    0x000202 // 514
 // *** Make sure that the decimal integer contained in the *.version ***
 // *** file served by the OTA Web server matches this VERSION number. ***
 

@@ -153,9 +153,9 @@ const uint16_t groupCount = sizeof(groups)/sizeof(group_t);
 
 // Alerts. Currently two alerts are set up
 alert_t alerts[] {
-  {16, DS_OPEN},  // garage door : alert when open (DS_OPEN)
-  {15, 0}         // automatic garage door closing : alert when turned off (DS_NO)
-                  //   but this is a selector so status will be (DS_NO | DS_YES) - DS_NO
+  {16, DS_OPEN, 1},  // garage door : alert when open (DS_OPEN), sound alert
+  {15, 0, 0}         // automatic garage door closing : alert when turned off (DS_NO), no sound alert
+                     //   but this is a selector so status will be (DS_NO | DS_YES) - DS_NO
 };
 
 const uint16_t alertCount = sizeof(groups)/sizeof(group_t);

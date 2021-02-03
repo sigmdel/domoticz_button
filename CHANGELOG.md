@@ -4,7 +4,16 @@
 
 ## Released
 
-### 0.2.1 (513)
+
+### 0.2.2 (514)
+
+  - Added support for user:password authorization when connecting to the MQTT broker
+  - Added missing sound field in alerts definition in `devices.cpp`
+  - Fixed quotes when building `versionURL` string in `sota.cpp`
+  - Updated README.md
+
+
+### 0.2.1 (513) f335ed0
 
   - Added sound alarm for flashing alerts. Implemented with an active buzzer and transistor
   - Updated README.md

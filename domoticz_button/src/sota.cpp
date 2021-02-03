@@ -56,7 +56,7 @@ OTA_result_t checkForUpdates(void) {
   #else
   String mac = config.hostname;
   #endif
-  String versionURL = String("http://") + config.otaHost + ':' + config.otaPort + config.otaUrlBase + mac + '.version'; 
+  String versionURL = String("http://") + config.otaHost + ':' + config.otaPort + config.otaUrlBase + mac + ".version"; 
   
   HTTPClient httpClient;
   httpClient.begin(wifiClient, versionURL);

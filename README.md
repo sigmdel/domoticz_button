@@ -51,12 +51,12 @@ Furthermore, there are scenes and groups defined in Domoticz which are quite use
   using a smaller or bigger screen would require carefull rewritting of the messages and adjustment of the display font.
 
   3. A rotary encoder and a push-button switch. These could be separate, but a KY040 rotary encoder with integrated push-button switch
-  was used.
+  and pullup resistors on the data and clock signals was used.
 
   4. An optional active buzzer for sound alarms if desired. Depending on the buzzer, it is probably best to use a 2N3906 PNP transistor 
   to supply current to the buzzer.
 
-![schematic](domotciz_button/doc/schematic.png) 
+See [schematic](https://github.com/sigmdel/domoticz_button/blob/main/domoticz_button/doc/schematic.png). 
 
 
 
@@ -378,7 +378,7 @@ If the button logs onto the correct Wi-Fi network but cannot connect to the MQTT
 
 1. The configuration does not contain the correct IP address of the broker. Change the configuration and update it as [explained below](#config).
 
-2. A valid user name and password must be used when connecting and publishing to the MQTT broker. Unfortunately that is not yet implemented. 
+2. A valid user name and password must be used when connecting and publishing to the MQTT broker.
 
 
 <div id="ota" />
@@ -483,8 +483,6 @@ be changed to 192.168.1.222, then the following will work.
 When changes to the configuration are done in this fashion, they are saved in the ESP8266 flash memory so that the modified version of the configuration will be used after a reboot.
 
 Be aware that the complete configuration file is processed by the JSON parser at once. So any formatting error in the configuration file will result in no changes being made to the configuration even if the error is only an extra comma in the last key-value pair or after the last } bracket. There are many JSON validators on the Web that can be used to verify the file.
-
-**While fields for the MQTT user and password are in place, secure connections for MQTT messages is not yet implemented.** 
 
 <div id="licence" />
 
