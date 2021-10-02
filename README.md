@@ -4,51 +4,50 @@ A [PlatformIO](https://platformio.org) project built on an ESP8266 development b
 a rotary encoder with push-button and an optional buzzer to provide a physical interface 
 to a home automation system based on [Domoticz](https://domoticz.com). 
 
-
 # Table of Contents
-  [Inspiration](#inspiration)<br/>
-  [Hardware](#hardware)<br/>
-  [Requirements](#requirements])<br/>
-  [Usage](#usage)<br/>
-  &nbsp;&nbsp;&nbsp;[Display](#display)<br/>
-  &nbsp;&nbsp;&nbsp;[Encoder/push-button](#encoder)<br/>
-  &nbsp;&nbsp;&nbsp;[Display Blanking](#blanking)<br/>
-  &nbsp;&nbsp;&nbsp;[Alerts](#alerts)<br/>
-  &nbsp;&nbsp;&nbsp;[Default Device](#default_device)<br/>
-  &nbsp;&nbsp;&nbsp;[Managing](#managing)<br/>
-  [Setup](#setup)<br/>
-  &nbsp;&nbsp;&nbsp;[Zones](#zones)<br/>
-  &nbsp;&nbsp;&nbsp;[Device Status](#status)<br/>
-  &nbsp;&nbsp;&nbsp;[List of Devices](#devices)<br/>
-  &nbsp;&nbsp;&nbsp;[Selector Switches](#selectors)<br/>
-  &nbsp;&nbsp;&nbsp;[Groups](#groups)<br/>
-  &nbsp;&nbsp;&nbsp;[Alerts](#alertsetup)<br/>
-  [Language Support](#nls)<br/>
-  [Initial Wireless Connections](#wifi)<br/>
-  [OTA Firmware Updates](#ota)<br/>
-  [Configuration](#config)<br/>
-  [Licence](#licence)
+<!-- TOC -->
 
+- [1. Inspiration](#1-inspiration)
+- [2. Hardware](#2-hardware)
+- [3. Requirements](#3-requirements)
+- [4. Usage](#4-usage)
+    - [4.1. Display](#41-display)
+    - [4.2. Encoder/push-button](#42-encoderpush-button)
+    - [4.3. Display Blanking](#43-display-blanking)
+    - [4.4. Alerts](#44-alerts)
+- [5. Setup](#5-setup)
+    - [5.1. Zones](#51-zones)
+    - [5.2. Device Status](#52-device-status)
+    - [5.3. List of Devices](#53-list-of-devices)
+    - [5.4. Selector Switches](#54-selector-switches)
+    - [5.5. Groups](#55-groups)
+    - [5.6. Alerts](#56-alerts)
+    - [5.7. Default Device](#57-default-device)
+    - [5.8. Managing](#58-managing)
+- [6. Language Support](#6-language-support)
+- [7. Initial Wireless Connections](#7-initial-wireless-connections)
+- [8. OTA Firmware Updates](#8-ota-firmware-updates)
+- [9. Configuration](#9-configuration)
+- [10. Licence](#10-licence)
 
-<div id="inspiration" />
+<!-- /TOC -->
 
-# Inspiration 
+## 1. Inspiration 
 
 **Domoticz Button** is based on [Kitchen Button](https://github.com/crankyoldgit/Kitchen-Button) by David Conran (crankyoldgit)
 which uses the same hardware to control [Tasmota](https://github.com/arendst/Tasmota) switches directly. It is a great project and it
 works as is. But my home automation system has some devices that are not based on Tasmota which I also wanted to control.
 Furthermore, there are scenes and groups defined in Domoticz which are quite useful.
 
-<div id="hardware" />
 
-# Hardware
+## 2. Hardware
 
   1. An ESP8266 development board such as a D1 Mini or NodeMCU. Would probably work with an ESP32 base board, but the ESP8266 is up 
   to the task without problems.
 
   2. An SSD1306 128x64 OLED display. Perhaps a smaller or a bigger screen could be used, but 
-  The messages shown on the display have been carefully crafted for a 3 line by approximately 14 character display, so 
-  using a smaller or bigger screen would require carefull rewritting of the messages and adjustment of the display font.
+  the messages shown on the display have been carefully crafted for a 3 line by approximately 14 character display, so 
+  using a smaller or bigger screen would require careful rewriting of the messages and adjustment of the display font.
 
   3. A rotary encoder and a push-button switch. These could be separate, but a KY040 rotary encoder with integrated push-button switch
   and pullup resistors on the data and clock signals was used.
@@ -59,14 +58,20 @@ Furthermore, there are scenes and groups defined in Domoticz which are quite use
 See [schematic](https://github.com/sigmdel/domoticz_button/blob/main/domoticz_button/doc/schematic.png). 
 
 
+## 3. Requirements 
 
-<div id="requirements" />
+There are three Domoticz server requirements. 
 
-# Requirements 
+  1. The `MQTT Client Gatewway with LAN interface` hardware
+has to be set up in Domoticz. That should already be the case if using Tasmota devices.
 
-There is one requirement on the Domoticz server. The `MQTT Client Gatewway with LAN interface` hardware
-has to be set up in Domoticz and its `Publish Topic` field has to be set to `out`.
+  2. The `Prevent Loop` field must be set to `False` (default value is `True`). 
 
+  3. The `Publish Topic` field has to be set to `out` (default value is `out`).
+
+While the proper functioning of **Domoticz Button** has always relied on Domoticz echoing  `domoticz\in` messages as `domoticz\out` messages, it has not been documented here until Oct. 2, 2021. Apologies to anyone testing this code and concluding it did not work because of this previously missing piece of documentation. Setting `Prevent Loop` false is not the recommended setting because it can cause "infinite loops" notably in Node-Red. See the [**FireWizard** post](https://www.domoticz.com/forum/viewtopic.php?p=280055#p280055) in the Domoticz Forum on this topic. 
+
+  
 The following libraries (as copied from `platformio.ini`) are used
 
     lib_deps = 
@@ -83,17 +88,14 @@ Of course a different SSD1306 library could be used but `ESP8266 and ESP32 OLED 
 Finally, the font used is **Roboto 14** created with the *Font Converter* by Daniel Eichhorn available at https://oleddisplay.squix.ch/.
 
 
-<div id="usage" />
-
-# Usage
+## 4. Usage
 
 The user interface consists of a small display and a rotary button with push-button action. Use of such a
 simple device must necessarily be straightforward and intuitive. Hopefully, a balance between functionality 
 and ease of use has been reached.
 
-<div id="display" />
 
-## Display
+### 4.1. Display
 
 Even if it is less than an inch (2.54 cm) across, the OLED display is very legible at various angles. The display
 is divided into three lines or rows. Here is a virtual device in Domoticz that controls a bedroom light.
@@ -130,9 +132,7 @@ the **Domoticz button**.
     +-----------------+
 
 
-<div id="encoder" />
-
-## Encoder/push-button
+### 4.2. Encoder/push-button
 
 Rotating the encoder clockwise or counterclockwise will show the status of the next or the previous device. 
 
@@ -162,16 +162,13 @@ These are edited in the same manner as dimmer brightness is:
   3. press the push-button once to select the displayed selector value and to exit the selector value editing mode,
   4. press the push-button twice to exit the selector value editing mode without changing the current selector value.
 
-<div id="blanking" />
 
-## Display Blanking
+### 4.3. Display Blanking
 
 After 15 seconds of inactivity, the display is blanked. Pressing the push-button or turning the rotary encoder one
 step restores the display. That initial wake up button press or encoder step is ignored.
 
-<div id="alerts" />
-
-## Alerts
+### 4.4. Alerts
 
 When the display is blanked, alerts can be flashed (3 seconds on / 3 seconds off by default). In the example 'device.cpp'
 file there are two alerts associated with the garage door. The first shows when the garage door is open. The second shows when
@@ -183,15 +180,12 @@ disabled for each alert independently. Pressing the push-button quickly twice wh
 sound alarm for 60 minutes. This delay is a parameter that can be modified; see [Configuration](#config).
 
 
-<div id="setup" />
 
-# Setup
+## 5. Setup
 
 Unlike some web interfaces to Domoticz, the **Domoticz button** will not obtain a list of devices from the home automation server. The content of `devices.h` and `devices.cpp` must be modified to point to the Domoticz virtual devices that are to be controlled by the button.
 
-<div id="zones" />
-
-## Zones
+### 5.1. Zones
 
 First define the zones in the house to which devices belong. The enumerated type is defined in the `devices.h` header file.
 
@@ -209,9 +203,8 @@ It does not matter, but remember that these zones correspond to the top row in t
 
 Adjust their names in the `zones[]` array of string in `devices.cpp`. Don't forget that the width of the display is limited.
 
-<div id="status"/>
 
-## Device Status
+### 5.2. Device Status
 
 Second adjust the enumeration of device status messages that can occur in `devices.h`.
 
@@ -230,9 +223,8 @@ the `DS_MIXED` status is included. It indicates that some devices in a group are
 
 The string representations of all these status is in the `devicestatus[]` array of strings. These are displayed on the third line of the OLED display.
 
-<div id="devices" />
 
-## List of Devices
+### 5.3. List of Devices
 
 The "hard work" now begins. A list of all Domoticz devices to be controlled by the button must be set up in `devices.cpp`. This is the `devices[]` array of `device_t` structures.
 
@@ -269,9 +261,7 @@ Here is part of the current definition
 I suggest starting with on/off switches and dimmers. Add selector switches, groups and 
 alerts once the basics are working. 
 
-<div id="selectors" />
-
-## Selector Switches
+### 5.4. Selector Switches
 
 The extra information needed for each selector switch is defined in the `selectors[]` array in `devices.cpp. The selector_t structure must be filled for each selector.
 
@@ -292,9 +282,8 @@ o
 For example, the scheduling calendar selector has three possible values:
 `DS_DEFAULT`, `DS_WEEKEND` and `DS_HOLIDAYS`, so its `status0` field is set to `DS_DEFAULT` and that way when editing that extra value, the application knows what to display for the three possible selection values.
 
-<div id="groups" />
 
-## Groups
+### 5.5. Groups
 
 Unfortunately, Domoticz does not send an MQTT message to update the status of a group when the status of a member device changes. So the program does it on its own. In order to do that it must know which devices belong to the group.
 
@@ -306,9 +295,8 @@ Unfortunately, Domoticz does not send an MQTT message to update the status of a 
 
 Again the first field is the group index in the `devices[]` not the Domoticz idx of the group. The second field is the number of member devices and finally there's a list of the indices of the member devices. Currently the limit on the number of devices is set at 5. 
 
-<div id="alertsetup" />
 
-## Alerts
+### 5.6. Alerts
 
 Alerts are simply defined by an index in the `devices[]` array identifying the device that can raise an alert and a condition which is nothing else than its status.
 
@@ -320,9 +308,8 @@ Alerts are simply defined by an index in the `devices[]` array identifying the d
 
 For example, an alert is raised when automatic garage door closing is disabled. The virtual Domoticz device for this is a selector switch and the disable setting is the first selector level which is 0. So the `alert_t` structure for that alert is `{15,0,0}`. The last field is set to `0` which means the buzzer is not to be activated when the alert is flashed on the display. If that `0` were to be replaced with a `1` then the buzzer would be actvated each time the alert is shown on the display.
 
-<div id="default_device" />
 
-## Default Device
+### 5.7. Default Device
 
 A default device can be defined in the configuration. The status of that device will be shown whenever the displayed is refreshed after being blanked because of inactivity. Without a defined default device, the device shown on the display when activating the display will remain the same that was shown just before the display was turned off.
 
@@ -335,9 +322,7 @@ The configuration parameters (see [config](#config) that set the default device 
   - `defaultActive`: an unsigned 8 bit integer that should be set to 1 to toggle the state of the default device with a button press when the display is blanked and set to 0 to only display the status of the default device when the display is refreshed after being blanked.
 
 
-<div id="managing" />
-
-## Managing
+### 5.8. Managing
 
 Instead of remotely controlling Domoticz virtual devices, the **Domoticz button** can be put in what could be called management mode. Press and hold down the push-button for a full two seconds or more to enter that mode.  Then `-Configuration-` will be shown on the top line of the display while each possible action is shown in the following lines, one screen at a time. Here is a list of the possible menu choices.
 
@@ -354,18 +339,16 @@ Instead of remotely controlling Domoticz virtual devices, the **Domoticz button*
 This menu works very much like a selector switch. Rotate the encoder to go to the next or previous choice. Click once to launch the currently shown action. Click twice to exit the management mode and to return to the device display mode.
 
 
-<div id="nls" />
 
-# Language Support
+## 6. Language Support
 
 Rudimentary support for showing English or French text on the OLED display was added in version 0.1.1. It would be a simple matter to add another language. See the comment at the beginning of `lang.h` for an explanation. Contributions for other languages are most welcomed.
 
 
-<div id="wifi" />
 
-# Initial Wireless Connections
+## 7. Initial Wireless Connections
 
-Wi-Fi credentials (i.e. the wireless network name or SSID and password) are not defined anywhere in the **Domoticz button** firmware. Consequently, the ESP8266 will automatically reconnect to the 
+Wi-Fi credentials (i.e., the wireless network name or SSID and password) are not defined anywhere in the **Domoticz button** firmware. Consequently, the ESP8266 will automatically reconnect to the 
 last used Wi-Fi network if that is possible. 
 
 During the boot process, the button will indicate that it has connected to the Wi-Fi network and report the IP address it obtained from the network DHCP server. It then reports if it has successfully connected to the MQTT server or not. Both of these connections must be established or else the button is rather useless.
@@ -381,9 +364,7 @@ If the button logs onto the correct Wi-Fi network but cannot connect to the MQTT
 2. A valid user name and password must be used when connecting and publishing to the MQTT broker.
 
 
-<div id="ota" />
-
-# OTA Firmware Updates
+## 8. OTA Firmware Updates
 
 Starting with version 0.1.2, firmware of a Domoticz button will be (optionally) updated if a new version is available when the device is rebooted. 
 The implementation is based on [Self-updating OTA firmware for ESP8266](https://www.bakke.online/index.php/2017/06/02/self-updating-ota-firmware-for-esp8266/)
@@ -431,9 +412,8 @@ configuration as defined in `config.h` will be used after a firmware update. Sin
 the Wi-Fi network.
 
 
-<div id="config" />
 
-# Configuration
+## 9. Configuration
 
 A number of parameters can be set in the `config.h` header file. These options are loosely grouped as follows:
 1. MQTT parameters
@@ -484,12 +464,7 @@ When changes to the configuration are done in this fashion, they are saved in th
 
 Be aware that the complete configuration file is processed by the JSON parser at once. So any formatting error in the configuration file will result in no changes being made to the configuration even if the error is only an extra comma in the last key-value pair or after the last } bracket. There are many JSON validators on the Web that can be used to verify the file.
 
-<div id="licence" />
 
-# Licence
+## 10. Licence
 
 The **BSD Zero Clause** ([SPDX](https://spdx.dev/): [0BSD](https://spdx.org/licenses/0BSD.html)) licence applies.
-
-
-
-
