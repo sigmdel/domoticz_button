@@ -8,16 +8,16 @@
 //#define DEBUG_CONFIG
 
 #define APP_NAME   "Domoticz button"
-#define VERSION    0x000202 // 514
+#define VERSION    0x000203 // 515
 // *** Make sure that the decimal integer contained in the *.version ***
 // *** file served by the OTA Web server matches this VERSION number. ***
 
 // *** Hostname ***
-// 
-// Allowed chars: "a".."z", "A".."Z", "0".."9" "-", but must not start nor end with "-". 
+//
+// Allowed chars: "a".."z", "A".."Z", "0".."9" "-", but must not start nor end with "-".
 // Assume that the name is not case sensitive. Ref: https://en.wikipedia.org/wiki/Hostname
 //
-// The host name is used to identify the device with the MQTT broker 
+// The host name is used to identify the device with the MQTT broker
 // and used to get firmware update from the OTA server
 
 #define HOST_NAME   "DomoButton-1"
@@ -65,7 +65,7 @@
 #define LOG_LEVEL_UART    LOG_DEBUG
 #define LOG_LEVEL_SYSLOG  LOG_ERR
 
-// *** Domoticz MQTT topics 
+// *** Domoticz MQTT topics
 
 #define DOMO_SUB_TOPIC "domoticz/in"   // case sensitive
 #define DOMO_PUB_TOPIC "domoticz/out"  // case sensitive
@@ -74,12 +74,12 @@
 
 // Maximum number of characters in string including terminating 0
 //
-#define URL_SZ             81  
-#define SSID_SZ            33  
+#define URL_SZ             81
+#define SSID_SZ            33
 #define IP_SZ              17  // 255.255.255.255
 #define PSWD_SZ            65  // minimum 8
 #define HOST_NAME_SZ       32  // maximum size of 31 bytes for OpenSSL e-mail certificates
-#define MSG_SZ            441  // needs to be big enough for "reach" command (i.e. > 3*URL_SZ) 
+#define MSG_SZ            441  // needs to be big enough for "reach" command (i.e. > 3*URL_SZ)
 #define TOPIC_SZ       PWD_SZ
 
 #define CONFIG_MAGIC    0x4D44    // 'M'+'D'
@@ -87,7 +87,7 @@
 struct config_t {
   uint16_t magic;                 // check for valid config in EEPROM
   char hostname[HOST_NAME_SZ];    // used for Wi-Fi connection and MQTT broker connection
-  char mqttHost[URL_SZ];          // URL of MQTT server 
+  char mqttHost[URL_SZ];          // URL of MQTT server
   uint16_t mqttPort;              // MQTT port
   char mqttUser[SSID_SZ];         // *** NOT YET IMPLEMENTED ***
   char mqttPswd[PSWD_SZ];         // *** NOT YET IMPLEMENTED ***
@@ -99,10 +99,10 @@ struct config_t {
   char otaUrlBase[HOST_NAME_SZ];  // HTTP directory containing the firware and configuratino files
   uint8_t autoFirmwareUpdate;     // Check for new firmware version at startup
   uint16_t defaultDevice;         // Device to display when display reactivated
-  uint8_t defaultActive;          // Toggle active device with button when display blanked 
+  uint8_t defaultActive;          // Toggle active device with button when display blanked
   uint32_t displayTimeout;        // Inactivity delay before blanking the display (seconds)
   uint32_t alertTime;             // On and Off times when flashing an alert (seconds)
-  uint32_t infoTime;              // Time to display information screens on restart 
+  uint32_t infoTime;              // Time to display information screens on restart
   uint32_t mqttUpdateTime;        // Delay after requesting device status from Domoticz on startup
   uint32_t suspendBuzzerTime;     // Time of sound alert suspensions
   uint8_t logLevelUart;           // Level of log messages shown on the serial port
@@ -115,7 +115,7 @@ typedef enum {
   LC_FROM_DEFAULTS
 } loadConfig_t;
 
-loadConfig_t loadConfig(void); 
+loadConfig_t loadConfig(void);
 void useDefaultConfig(void);
 bool updateConfig(void);
 void clearEEPROM(void);  // default config will be used on next boot
@@ -131,7 +131,7 @@ void clearEEPROM(void);  // default config will be used on next boot
   void dumpConfig(config_t* cfg, char* msg = NULL);
   void dumpConfig(void);
   void dumpEEPROMConfig(void);
-#endif  
+#endif
 
 extern config_t config;  // defined in config.cpp
 
