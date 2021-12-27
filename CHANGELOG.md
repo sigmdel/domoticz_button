@@ -4,6 +4,10 @@
 
 ## Released
 
+### 0.2.3 (515)
+ 
+  - Fixed SSD1306 libray dependency 
+  - Updated README.md and corrected some spelling errors 
 
 ### 0.2.2 (514)
 
@@ -62,4 +66,3 @@
 ### 0.1.0 (256) 0b20d0e
 
 - Initial public release
-

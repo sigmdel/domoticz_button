@@ -46,8 +46,7 @@ Furthermore, there are scenes and groups defined in Domoticz which are quite use
   to the task without problems.
 
   2. An SSD1306 128x64 OLED display. Perhaps a smaller or a bigger screen could be used, but 
-  the messages shown on the display have been carefully crafted for a 3 line by approximately 14 character display, so 
-  using a smaller or bigger screen would require careful rewriting of the messages and adjustment of the display font.
+  the messages shown on the display have been carefully crafted for a 3 line by approximately 14 character display. Using a screen with different dimensions would require careful rewriting of the messages and adjustment of the display font.
 
   3. A rotary encoder and a push-button switch. These could be separate, but a KY040 rotary encoder with integrated push-button switch
   and pullup resistors on the data and clock signals was used.
@@ -75,7 +74,7 @@ While the proper functioning of **Domoticz Button** has always relied on Domotic
 The following libraries (as copied from `platformio.ini`) are used
 
     lib_deps = 
-        squix78/ESP8266 and ESP32 OLED driver for SSD1306 displays@4.2.0
+        thingpulse/ESP8266 and ESP32 OLED driver for SSD1306 displays@^4.2.0
         tzapu/WifiManager@0.16
         knolleary/PubSubClient@2.8
         bblanchon/ArduinoJson@6.17.2
@@ -138,9 +137,8 @@ Rotating the encoder clockwise or counterclockwise will show the status of the n
 
 Pressing the encoder push-button once will change the status and thus toggle the corresponding IoT device. A lamp will
 be turned off or on. A dimmer will be turned off or on without changing its brightness level, at least
-in my experience with Tasmota controlled dimmers. A Domoticz scene will be executed. The Goodnight scene
-turns on bedside lights and gradually turns off all other lights in the house. This is all defined in 
-Domoticz.
+in my experience with Tasmota controlled dimmers. A Domoticz scene will be executed. For example, the Goodnight scene
+turns on bedside lights and gradually turns off all other lights in the house.
 
 If the device is a dimmer, pressing the push-button twice will put the controller in a brightness editing mode.  
 
@@ -221,7 +219,7 @@ Second adjust the enumeration of device status messages that can occur in `devic
 The first three are found in all systems. Since I have groups in Domoticz,
 the `DS_MIXED` status is included. It indicates that some devices in a group are on while others are off. The other four statuses correspond to the automatic garage door closer and the garage door state mentioned above. The last three are possible values of a selector switch that is used to select a scheduling calendar in Domoticz.
 
-The string representations of all these status is in the `devicestatus[]` array of strings. These are displayed on the third line of the OLED display.
+The string representations of all these status are in the `devicestatus[]` array of strings. These are displayed on the third line of the OLED display.
 
 
 ### 5.3. List of Devices
@@ -306,7 +304,7 @@ Alerts are simply defined by an index in the `devices[]` array identifying the d
         uint8_t sound;     // 0 silent alert, 1 buzzer sounds when alert shown   
     } alert_t;
 
-For example, an alert is raised when automatic garage door closing is disabled. The virtual Domoticz device for this is a selector switch and the disable setting is the first selector level which is 0. So the `alert_t` structure for that alert is `{15,0,0}`. The last field is set to `0` which means the buzzer is not to be activated when the alert is flashed on the display. If that `0` were to be replaced with a `1` then the buzzer would be actvated each time the alert is shown on the display.
+For example, an alert is raised when automatic garage door closing is disabled. The virtual Domoticz device for this is a selector switch and the disable setting is the first selector level which is 0. So the `alert_t` structure for that alert is `{15,0,0}`. The last field is set to `0` which means the buzzer is not to be activated when the alert is flashed on the display. If that `0` were to be replaced with a `1` then the buzzer would be activated, each time the alert is shown on the display.
 
 
 ### 5.7. Default Device
@@ -317,9 +315,9 @@ If the default device is set to be active, then the push-button can be used to t
 
 The configuration parameters (see [config](#config) that set the default device number and whether its active or not are
 
-  - `defaultDevice`: an unsigned 16 bit integer that is the index of the device in the `devices[]` array. If there's to be no default device, set this to a value greater than the number of devices in the array, says the default 65535.
+  - `defaultDevice`: an unsigned 16-bit integer that is the index of the device in the `devices[]` array. If there's to be no default device, set this to a value greater than the number of devices in the array, says the default 65535.
 
-  - `defaultActive`: an unsigned 8 bit integer that should be set to 1 to toggle the state of the default device with a button press when the display is blanked and set to 0 to only display the status of the default device when the display is refreshed after being blanked.
+  - `defaultActive`: an unsigned 8-bit integer that should be set to 1 to toggle the state of the default device with a button press when the display is blanked and set to 0 to only display the status of the default device when the display is refreshed after being blanked.
 
 
 ### 5.8. Managing
@@ -342,7 +340,7 @@ This menu works very much like a selector switch. Rotate the encoder to go to th
 
 ## 6. Language Support
 
-Rudimentary support for showing English or French text on the OLED display was added in version 0.1.1. It would be a simple matter to add another language. See the comment at the beginning of `lang.h` for an explanation. Contributions for other languages are most welcomed.
+Rudimentary support for showing English or French text on the OLED display was added in version 0.1.1. It would be a simple matter to add another language. See the comment at the beginning of `lang.h` for an explanation. Contributions for other languages are most welcome.
 
 
 
@@ -355,7 +353,7 @@ During the boot process, the button will indicate that it has connected to the W
 
 Of course, that may not be possible to reconnect to the Wi-Fi network if the last used wireless network is no longer available or if the ESP has never been connected. In that case, the button will start an access point (its own wireless network) and a small web server. The name (SSID) of the network will be shown on the display as well as the IP address of the web server. Log into to that network, using a desktop computer, tablet or smart phone, open URL 192.168.4.1 in a web browser and enter the name of the local wireless network and its password. Once the button has logged into the desired network, it will shut down its own wireless access point.
 
-Once a **Domoticz button** has connected to the local Wi-Fi network, it will always reconnect automatically to that network even if a new version of the firmware is loaded into the device or if a new version of the button configuration is loaded as explained below. Normally, that is the desired behaviour. But what if Domoticz is moved to a different wireless network and the original wireless network remains in use? Then the button will keep on logging into the original network. The solution is to select the **Clear Wi-Fi** action in the configuration [management](#managing) menu. When that action is activated, the Wi-Fi credentials will be erased and the button will be restarted. It will start an access point as explained above and it will then be possible to enter the new credentials as explained in the previous paragraph.
+Once a **Domoticz button** has connected to the local Wi-Fi network, it will always reconnect automatically to that network even if a new version of the firmware is loaded into the device or if a new version of the button configuration is loaded as explained below. Normally, that is the desired behaviour. But what if Domoticz is moved to a different wireless network and the original wireless network remains in use? Unfortunately, the button will keep on trying to log into the original network. To stop this, select the **Clear Wi-Fi** action in the configuration [management](#managing) menu. When that action is activated, the Wi-Fi credentials will be erased and the button will be restarted. It will start an access point as explained above and it will then be possible to enter the new credentials as explained in the previous paragraph.
 
 If the button logs onto the correct Wi-Fi network but cannot connect to the MQTT broker, then there are two explanations. 
 
@@ -385,12 +383,12 @@ Here is how the files for two Domoticz buttons are stored on a Raspberry Pi host
 
     pi@rasberrypi:/var/www/html/domoticz_button $ ls -l
     total 736
-    -rw-r--r-- 1 nestor nestor 365760 Jan 19 12:50 DomoButton-1.bin
-    -rw-r--r-- 1 nestor nestor    344 Jan 24 15:57 DomoButton-1.config.json
-    -rw-r--r-- 1 nestor nestor      4 Jan 19 18:05 DomoButton-1.version
-    -rw-r--r-- 1 nestor nestor 365772 Jan 19 16:15 DomoButton-2.bin
-    -rw-r--r-- 1 nestor nestor    353 Jan 22 11:31 DomoButton-2.config.json
-    -rw-r--r-- 1 nestor nestor      4 Jan 19 16:15 DomoButton-2.version
+    -rw-r--r-- 1 pi pi 365760 Jan 19 12:50 DomoButton-1.bin
+    -rw-r--r-- 1 pi pi    344 Jan 24 15:57 DomoButton-1.config.json
+    -rw-r--r-- 1 pi pi      4 Jan 19 18:05 DomoButton-1.version
+    -rw-r--r-- 1 pi pi 365772 Jan 19 16:15 DomoButton-2.bin
+    -rw-r--r-- 1 pi pi    353 Jan 22 11:31 DomoButton-2.config.json
+    -rw-r--r-- 1 pi pi      4 Jan 19 16:15 DomoButton-2.version
     pi@raspberrypi:/var/www/html/domoticz_button $ cat DomoButton-1.version 
     259
 
@@ -460,7 +458,7 @@ be changed to 192.168.1.222, then the following will work.
         "mqttHost": "192.168.1.222"
     }
 
-When changes to the configuration are done in this fashion, they are saved in the ESP8266 flash memory so that the modified version of the configuration will be used after a reboot.
+When changes to the configuration are made in this fashion, they are saved in the ESP8266 flash memory so that the modified version of the configuration will be used after a reboot.
 
 Be aware that the complete configuration file is processed by the JSON parser at once. So any formatting error in the configuration file will result in no changes being made to the configuration even if the error is only an extra comma in the last key-value pair or after the last } bracket. There are many JSON validators on the Web that can be used to verify the file.
 
