@@ -1,5 +1,5 @@
 
-// based on 
+// based on
 // Self-updating OTA firmware for ESP8266 by Erik H. Bakke (OppoverBakke)
 // https://www.bakke.online/index.php/2017/06/02/self-updating-ota-firmware-for-esp8266/
 
@@ -32,7 +32,7 @@ bool otaUpdate(void) {
   #else
   String mac = config.hostname;
   #endif
-  String url = String(config.otaUrlBase) + mac + ".bin"; 
+  String url = String(config.otaUrlBase) + mac + ".bin";
   t_httpUpdate_return ret = ESPhttpUpdate.update(wifiClient, config.otaHost, config.otaPort, url);
   switch (ret) {
     case HTTP_UPDATE_FAILED:
@@ -42,7 +42,7 @@ bool otaUpdate(void) {
       sendToLogP(LOG_ERR, PSTR("Firmware update failed with error : NO UPDATES"));
       break;
     case HTTP_UPDATE_OK:
-      sendToLogPf(LOG_INFO, PSTR("Firware update succeeded"));
+      sendToLogPf(LOG_INFO, PSTR("Firmware update succeeded"));
       break;
   }
   return ret == HTTP_UPDATE_OK;
@@ -56,8 +56,8 @@ OTA_result_t checkForUpdates(void) {
   #else
   String mac = config.hostname;
   #endif
-  String versionURL = String("http://") + config.otaHost + ':' + config.otaPort + config.otaUrlBase + mac + ".version"; 
-  
+  String versionURL = String("http://") + config.otaHost + ':' + config.otaPort + config.otaUrlBase + mac + ".version";
+
   HTTPClient httpClient;
   httpClient.begin(wifiClient, versionURL);
   int httpCode = httpClient.GET();
@@ -65,19 +65,15 @@ OTA_result_t checkForUpdates(void) {
     sendToLogPf(LOG_INFO, PSTR("%s.%s not found on OTA server"), mac.c_str(), "version");
   } else if (httpCode != 200) {
     sendToLogPf(LOG_INFO, PSTR("Firmware version check failed. HTTP response code %d"), httpCode);
-  } else { 
+  } else {
     String newFWVersion = httpClient.getString();
     int newVersion = newFWVersion.toInt();
     if (newVersion <= VERSION) {
       sendToLogPf(LOG_INFO, PSTR("Current firmware version %d is the latest version"), VERSION);
       result = OTA_NO_NEW_VERSION;
-    } else if (otaUpdate()) 
+    } else if (otaUpdate())
       result = OTA_NEW_VERSION_LOADED;
   }
   httpClient.end();
   return result;
 }
-
-
-
-
